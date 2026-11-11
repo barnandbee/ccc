@@ -24,6 +24,16 @@ Add `?dev` to the address to open every level for characters you've already unlo
 
 GitHub Pages on a free account needs a public repository, so anyone could read the code. That's why the passcode answers aren't stored anywhere in it (see below).
 
+## Publishing an update
+
+Run this before pushing any change to the game:
+
+```sh
+node tools/bump-version.mjs
+```
+
+It stamps a new version on every script and the stylesheet in `index.html`, so players' phones load the new files instead of reusing old cached copies.
+
 ## How the character passcodes work
 
 Each friend unlocks their character by answering a question about their card, for example "What is Tim's favourite food?".
@@ -90,3 +100,4 @@ The anon key is designed to be public. Row level security limits it to reading a
 | `js/share.js` | The shareable "I saved Christmas" picture |
 | `tools/check-levels.mjs` | Checks every level can be finished by every character, using the game's own physics |
 | `tools/encrypt.mjs` | Builds `js/locks.js` from a private file of answers |
+| `tools/bump-version.mjs` | Stamps a new version on the files so phones don't use stale copies |
