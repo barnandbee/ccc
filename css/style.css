@@ -86,6 +86,10 @@ canvas#game {
 p { font-size: 1.2rem; line-height: 1.35; }
 
 .title-art { width: min(560px, 100%); height: auto; aspect-ratio: 560 / 220; display: block; margin: 0 auto; }
+canvas.portrait { max-width: 100%; }
+#s-story canvas.portrait, #s-finale canvas.portrait { display: block; margin: 0 auto; height: auto; }
+#s-story canvas.portrait { width: min(420px, 100%); aspect-ratio: 420 / 200; }
+#s-finale canvas.portrait { width: min(560px, 100%); aspect-ratio: 560 / 260; }
 
 /* ---------- Buttons ---------- */
 .btn {
@@ -281,3 +285,12 @@ input[type='text']:focus { outline: 3px solid rgba(241, 200, 75, 0.7); }
 .tbtn.jump { width: 76px; height: 76px; }
 .tbtn.special { margin-bottom: 30px; }
 .tbtn.down { background: rgba(29, 79, 184, 0.35); transform: scale(0.94); }
+
+/* Short screens (phones held sideways): keep the story compact so "Let's go!" is close at hand */
+@media (max-height: 500px) {
+  #s-story .h { margin: 0; font-size: 1.6rem; }
+  #s-story canvas.portrait { width: min(190px, 100%); }
+  #s-story .story { padding: 8px 16px; margin-bottom: 8px; }
+  #s-story .story p { font-size: 1.05rem; margin: 0.2em 0; }
+  #s-finale canvas.portrait { width: min(380px, 100%); }
+}

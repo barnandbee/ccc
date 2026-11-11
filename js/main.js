@@ -95,7 +95,16 @@ function drawCharAt(ctx, id, x, y, scale, pose) {
 }
 
 function paintCanvas(c, t) {
-  if (!c.dataset.lw) { c.dataset.lw = c.width; c.dataset.lh = c.height; }
+  if (!c.dataset.lw) {
+    c.dataset.lw = c.width;
+    c.dataset.lh = c.height;
+    // Fix the on-screen size before resizing the backing pixels. Otherwise a canvas
+    // with no CSS size would grow by the pixel ratio on every redraw (3x on iPhones).
+    if (!c.style.width && !c.classList.contains('sized')) {
+      c.style.width = `min(${c.width}px, 100%)`;
+      c.style.height = 'auto';
+    }
+  }
   const lw = +c.dataset.lw, lh = +c.dataset.lh;
   const cw = c.clientWidth;
   if (!cw) return;
