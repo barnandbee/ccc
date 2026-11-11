@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Christmas Card Characters: Save The Seasonal Spirit</title>
+  <meta name="description" content="A hand-drawn Christmas platformer. January has come early. Only the Christmas card characters can save the Seasonal Spirit.">
+  <meta name="theme-color" content="#2a2f3d">
+  <meta property="og:title" content="Christmas Card Characters: Save The Seasonal Spirit">
+  <meta property="og:description" content="January has come early. Only the Christmas card characters can save the Seasonal Spirit.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Patrick+Hand&family=Patrick+Hand+SC&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <canvas id="game" aria-label="Game"></canvas>
+
+    <div id="touch" hidden>
+      <div class="pad left-pad">
+        <button class="tbtn" data-action="left" aria-label="Left">◀</button>
+        <button class="tbtn" data-action="right" aria-label="Right">▶</button>
+      </div>
+      <div class="pad right-pad">
+        <button class="tbtn special" data-action="special" aria-label="Special move">★</button>
+        <button class="tbtn jump" data-action="jump" aria-label="Jump">▲</button>
+      </div>
+    </div>
+    <button id="pauseBtn" class="iconbtn" hidden aria-label="Pause">❚❚</button>
+
+    <!-- Title -->
+    <section class="screen paper" id="s-title">
+      <div class="sheet center">
+        <p class="kicker">Christmas 2026 presents</p>
+        <h1 class="title">Christmas Card Characters</h1>
+        <h2 class="subtitle">Save The Seasonal Spirit</h2>
+        <canvas class="portrait title-art" data-scene="title" width="560" height="220"></canvas>
+        <div class="stack">
+          <button class="btn primary big" data-go="select">Play</button>
+          <button class="btn" data-go="howto">How to play</button>
+          <button class="btn" data-go="scores">High scores</button>
+          <button class="btn small" id="muteBtn">Sound: on</button>
+        </div>
+        <p class="fine">With love from Barnaby, Cass &amp; Junie</p>
+      </div>
+    </section>
+
+    <!-- How to play -->
+    <section class="screen paper" id="s-howto">
+      <div class="sheet">
+        <h2 class="h">How to play</h2>
+        <div class="box sketch">
+          <p>January has come early, and it's draining the Seasonal Spirit out of Christmas. Run, jump and use your character's special move to get through four levels of January gloom, then face Blue Monday himself.</p>
+          <ul class="keys">
+            <li><b>Move:</b> ← → or A D (on a phone, ◀ ▶)</li>
+            <li><b>Jump:</b> ↑, W, Space or Z (▲). Hold it to jump higher.</li>
+            <li><b>Special move:</b> X or Shift (★)</li>
+            <li><b>Pause:</b> P or Esc</li>
+          </ul>
+          <p>Collect stars of Seasonal Spirit, find three hidden treasures in each level, and light the Christmas tree at the end. Jump on January's minions to cheer them up. If you run out of hearts, you'll go back to the last flag.</p>
+          <p>Each character is unlocked by a question about their Christmas card, so keep your card handy.</p>
+        </div>
+        <button class="btn" data-go="title">Back</button>
+      </div>
+    </section>
+
+    <!-- Character select -->
+    <section class="screen paper" id="s-select">
+      <div class="sheet">
+        <h2 class="h">Who are you playing as?</h2>
+        <p class="lead">Each friend got a character on their Christmas card. Tap yours to unlock it.</p>
+        <div id="charList" class="char-list"></div>
+        <button class="btn" data-go="title">Back</button>
+      </div>
+    </section>
+
+    <!-- Unlock -->
+    <section class="screen dim" id="s-unlock">
+      <form class="modal paper sketch" id="unlockForm" autocomplete="off">
+        <canvas class="portrait locked" width="160" height="160" data-locked="1"></canvas>
+        <h2 class="h" id="unlockTitle">To unlock</h2>
+        <p class="question" id="unlockQ"></p>
+        <input id="unlockInput" type="text" inputmode="text" autocapitalize="off" spellcheck="false" placeholder="Your answer" aria-label="Your answer">
+        <p class="msg" id="unlockMsg" aria-live="polite"></p>
+        <div class="row">
+          <button type="button" class="btn" data-go="select">Cancel</button>
+          <button type="submit" class="btn primary">Unlock</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Character card -->
+    <section class="screen paper" id="s-card">
+      <div class="sheet">
+        <div id="cardWrap"></div>
+        <div class="row">
+          <button class="btn" data-go="select">Back</button>
+          <button class="btn primary big" id="playAs">Play</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Level select -->
+    <section class="screen paper" id="s-levels">
+      <div class="sheet">
+        <h2 class="h" id="levelsTitle">Choose a level</h2>
+        <div id="levelList" class="level-list"></div>
+        <p class="lead" id="levelsTotal"></p>
+        <div class="row">
+          <button class="btn" id="levelsBack">Back</button>
+          <button class="btn" id="finaleReplay" hidden>Finale</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Story -->
+    <section class="screen paper" id="s-story">
+      <div class="sheet center">
+        <h2 class="h">Oh no!</h2>
+        <canvas class="portrait" data-scene="story" width="420" height="200"></canvas>
+        <div class="box sketch story" id="storyText"></div>
+        <button class="btn primary big" id="storyGo">Let's go!</button>
+      </div>
+    </section>
+
+    <!-- Level complete -->
+    <section class="screen dim" id="s-complete">
+      <div class="modal paper sketch">
+        <h2 class="h">Tree lit!</h2>
+        <p class="lead" id="completeName"></p>
+        <table class="stats-table" id="completeStats"></table>
+        <p class="best" id="completeBest"></p>
+        <div class="row">
+          <button class="btn" id="completeLevels">Levels</button>
+          <button class="btn" id="completeRetry">Replay</button>
+          <button class="btn primary" id="completeNext">Next level</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pause -->
+    <section class="screen dim" id="s-pause">
+      <div class="modal paper sketch">
+        <h2 class="h">Paused</h2>
+        <div class="stack">
+          <button class="btn primary" id="resumeBtn">Resume</button>
+          <button class="btn" id="restartBtn">Restart level</button>
+          <button class="btn" id="pauseMute">Sound: on</button>
+          <button class="btn" id="quitBtn">Quit to levels</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Finale -->
+    <section class="screen paper" id="s-finale">
+      <div class="sheet center">
+        <h1 class="title">The Seasonal Spirit is saved!</h1>
+        <canvas class="portrait" data-scene="finale" width="560" height="260"></canvas>
+        <p class="lead" id="finaleVictory"></p>
+        <div class="box sketch letter">
+          <p class="script">Merry Christmas and a fabulous 2027!</p>
+          <p class="script">Love, Barnaby, Cass &amp; Junie <small>(woof)</small> x</p>
+        </div>
+        <p class="total">Total score: <b id="finaleScore">0</b></p>
+        <form id="scoreForm" class="row">
+          <input id="nameInput" type="text" maxlength="20" placeholder="Your name" aria-label="Your name" required>
+          <button class="btn primary" type="submit">Add to high scores</button>
+        </form>
+        <p class="msg" id="scoreMsg" aria-live="polite"></p>
+        <div class="row">
+          <button class="btn" id="shareBtn">Share picture</button>
+          <a class="btn" id="waBtn" target="_blank" rel="noopener">Send on WhatsApp</a>
+        </div>
+        <div class="row">
+          <button class="btn" data-go="scores">High scores</button>
+          <button class="btn" id="finaleLevels">Levels</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- High scores -->
+    <section class="screen paper" id="s-scores">
+      <div class="sheet">
+        <h2 class="h">High scores</h2>
+        <p class="lead" id="scoresNote"></p>
+        <ol id="scoreList" class="score-list"></ol>
+        <button class="btn" data-go="title">Back</button>
+      </div>
+    </section>
+
+    <!-- Rotate prompt -->
+    <section class="screen dim" id="s-rotate">
+      <div class="modal paper sketch center">
+        <h2 class="h">Turn your phone sideways</h2>
+        <p>It plays best in landscape.</p>
+        <button class="btn" id="rotateAnyway">Play anyway</button>
+      </div>
+    </section>
+  </div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
