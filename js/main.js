@@ -57,7 +57,9 @@ const canvas = $('#game');
 const game = new Game(canvas, { onComplete, onPause: pauseGame });
 const surf = new Surf(canvas, { onComplete, onPause: pauseGame });
 let engine = game; // whichever is running: the platformer or the bonus surf level
-const STARS_FOR_BONUS = 50;
+if (DEV) window.__surf = surf;
+const STARS_FOR_BONUS = 100;
+const BONUS_STAR_LEVELS = 3; // stars from levels 1-3 count towards unlocking the bonus
 if (DEV) window.__game = game;
 
 // ---------- Screen management ----------
@@ -351,15 +353,18 @@ function openCard(id) {
 $('#playAs').addEventListener('click', () => openLevels());
 
 // ---------- Levels ----------
-function totalScore(id) {
-  const p = prog(id);
-  return Object.values(p.best).reduce((sum, r) => sum + (r?.score || 0), 0);
+// ---------- Full runs ----------
+// Only a full run counts for the high-score board: start at level 1 and finish
+// levels 1, 2, 3 and 4 in order (plus the bonus once, between 3 and 4, if unlocked).
+// Restarting the level you're on is fine; jumping to another level ends the run.
+function runTotal(run) {
+  return Object.values(run.scores).reduce((sum, v) => sum + v, 0) + (run.bonus || 0);
 }
-// Most stars ever collected in each main level, added up
+// Most stars ever collected in each of levels 1-3, added up
 function totalStars(id) {
   const p = prog(id);
   let sum = 0;
-  for (let i = 0; i < LEVELS.length; i++) sum += Math.max(p.stars?.[i] || 0, p.best[i]?.sparks || 0);
+  for (let i = 0; i < BONUS_STAR_LEVELS; i++) sum += Math.max(p.stars?.[i] || 0, p.best[i]?.sparks || 0);
   return sum;
 }
 function bonusOpen(id) {
@@ -383,27 +388,32 @@ function openLevels() {
     let detail;
     if (bonus) {
       detail = !open
-        ? `Locked: collect ${STARS_FOR_BONUS} ★ across the levels<br>(${totalStars(current)} so far)`
+        ? `Locked: collect ${STARS_FOR_BONUS} ★ in levels 1–3<br>(${totalStars(current)} so far)`
         : best ? `Best ${best.score.toLocaleString('en-GB')}<br>${best.distance} m · ★ ${best.sparks}` : 'Not played yet';
     } else {
       detail = !open ? 'Locked' : best
         ? `Best ${best.score.toLocaleString('en-GB')}<br>★ ${best.sparks}/${best.total} · treasures ${best.secrets}/${best.secretTotal}`
         : 'Not played yet';
     }
+    const runNext = p.run && !bonus && p.run.next === i;
     btn.innerHTML = `
+      ${runNext ? '<div class="run-next">▶ next in your run</div>' : ''}
       <div class="n">${bonus ? 'Bonus level 3½' : `Level ${i + 1}`}</div>
       <div class="t">${esc(bonus ? BONUS_NAME : LEVELS[i].name)}</div>
       <div class="b">${detail}</div>`;
     btn.addEventListener('click', () => {
       A.sfx.click();
       if (i === 0 && !save.seenStory[current]) openStory();
-      else startLevel(i);
+      else beginLevel(i);
     });
     list.appendChild(btn);
   }
-  const total = totalScore(current);
-  $('#levelsTotal').textContent = total ? `Total score: ${total.toLocaleString('en-GB')}` : '';
-  $('#finaleReplay').hidden = !p.done;
+  let note;
+  if (p.run) note = `Full run in progress: ${runTotal(p.run).toLocaleString('en-GB')} points so far, next up level ${p.run.next + 1}.`;
+  else if (p.lastRun) note = `Last full run: ${p.lastRun.total.toLocaleString('en-GB')}. Start at level 1 for a new run.`;
+  else note = 'Start at level 1 and play through to level 4 for a full run that counts for the high scores.';
+  $('#levelsTotal').textContent = note;
+  $('#finaleReplay').hidden = !(p.done || p.lastRun);
   show('levels');
   A.playMusic('jingle');
 }
@@ -426,7 +436,25 @@ $('#storyGo').addEventListener('click', () => {
 });
 
 // ---------- Playing ----------
+// Starting a level from the menus: warns before ending a run in progress
+function beginLevel(i) {
+  const p = prog(current);
+  if (i !== BONUS && p.run && p.run.next !== i) {
+    const msg = i === 0
+      ? `Start a new full run? Your current run (${runTotal(p.run).toLocaleString('en-GB')} points, next up level ${p.run.next + 1}) will end.`
+      : `You're on a full run (next up: level ${p.run.next + 1}). Playing level ${i + 1} now ends that run, and it won't count for the high scores. Carry on?`;
+    if (!window.confirm(msg)) return;
+    p.run = null;
+    persist();
+  }
+  startLevel(i);
+}
+
 function startLevel(i) {
+  if (i === 0) {
+    prog(current).run = { next: 0, scores: {}, bonus: null };
+    persist();
+  }
   currentLevel = i;
   hidePages();
   setPlaying(true);
@@ -463,6 +491,30 @@ function onComplete(result) {
   const isBest = !prev || result.score > prev.score;
   if (isBest) p.best[result.level] = result;
   const bonusWasOpen = bonusOpen(current);
+  // full run bookkeeping
+  let runNote = '';
+  let runDone = false;
+  if (p.run) {
+    if (result.bonus) {
+      if (p.run.next === 3 && p.run.bonus == null) {
+        p.run.bonus = result.score;
+        runNote = 'Counted towards your full run.';
+      } else {
+        runNote = p.run.bonus != null ? 'Your run already has a bonus score, so this one is practice.' : 'Practice: the bonus counts once per run, between levels 3 and 4.';
+      }
+    } else if (result.level === p.run.next) {
+      p.run.scores[result.level] = result.score;
+      p.run.next++;
+      runNote = `Full run so far: ${runTotal(p.run).toLocaleString('en-GB')}`;
+    }
+    if (p.run.next >= LEVELS.length) {
+      p.lastRun = { total: runTotal(p.run), submitted: false };
+      p.run = null;
+      runDone = true;
+    }
+  } else if (!result.bonus) {
+    runNote = 'Practice: start at level 1 for a full run that counts for the high scores.';
+  }
   if (!result.bonus) {
     p.stars = p.stars || {};
     p.stars[result.level] = Math.max(p.stars[result.level] || 0, result.sparks);
@@ -475,7 +527,7 @@ function onComplete(result) {
   setPlaying(false);
   if (result.level === LEVELS.length - 1) {
     engine.stop();
-    openFinale();
+    openFinale(runDone);
     return;
   }
   const bestText = isBest ? (prev ? 'New best score!' : '') : `Best: ${prev.score.toLocaleString('en-GB')}`;
@@ -488,7 +540,7 @@ function onComplete(result) {
       <tr><td>★ Stars</td><td>${result.sparks}</td><td>${result.sparks * 4}</td></tr>
       <tr><td>Hazards smashed</td><td>${result.smashed}</td><td>${result.smashed * 20}</td></tr>
       <tr class="total"><td>Score</td><td></td><td>${result.score.toLocaleString('en-GB')}</td></tr>`;
-    $('#completeBest').textContent = bestText;
+    $('#completeBest').textContent = [bestText, runNote].filter(Boolean).join(' ');
     $('#completeRetry').textContent = 'Ride again';
     next.hidden = !(DEV || p.reached >= 3);
     next.textContent = 'Level 4';
@@ -513,22 +565,33 @@ function onComplete(result) {
     <tr><td>Tumbles</td><td>${result.deaths}</td><td>${result.deaths ? -result.deaths * 50 : 0}</td></tr>
     <tr class="total"><td>Score</td><td></td><td>${result.score.toLocaleString('en-GB')}</td></tr>`;
   const unlocked = !bonusWasOpen && bonusOpen(current) ? ` Bonus level unlocked: ${BONUS_NAME}!` : '';
-  $('#completeBest').textContent = bestText + unlocked;
+  $('#completeBest').textContent = [bestText, runNote, unlocked.trim()].filter(Boolean).join(' ');
   openModal('complete');
 }
-$('#completeNext').addEventListener('click', (e) => { engine.stop(); startLevel(Number(e.currentTarget.dataset.go)); });
-$('#completeRetry').addEventListener('click', () => { engine.stop(); startLevel(lastResult.level); });
+$('#completeNext').addEventListener('click', (e) => { engine.stop(); beginLevel(Number(e.currentTarget.dataset.go)); });
+$('#completeRetry').addEventListener('click', () => { engine.stop(); beginLevel(lastResult.level); });
 $('#completeLevels').addEventListener('click', () => { engine.stop(); openLevels(); });
 
 // ---------- Finale ----------
 let finaleTotal = 0;
-function openFinale() {
-  finaleTotal = totalScore(current);
+function openFinale(justFinishedRun = false) {
+  const p = prog(current);
+  const run = p.lastRun;
+  finaleTotal = run ? run.total : 0;
   $('#finaleVictory').textContent = cards[current]?.victory || '';
-  $('#finaleScore').textContent = finaleTotal.toLocaleString('en-GB');
+  $('#finaleScore').textContent = run ? finaleTotal.toLocaleString('en-GB') : '–';
   $('#nameInput').value = save.name || '';
   $('#scoreMsg').textContent = '';
+  let note;
+  if (!run) note = "That wasn't a full run, so it can't go on the high-score board. Start at level 1 and play through to level 4 to post a score.";
+  else if (run.submitted) note = 'This run is already on the high-score board. Start a new run from level 1 to beat it.';
+  else if (justFinishedRun) note = 'Full run complete! Add it to the high scores below.';
+  else note = 'Your last full run. You can add it to the high scores once.';
+  $('#runNote').textContent = note;
+  $('#scoreForm').hidden = !run || run.submitted;
   $('#scoreForm button').disabled = false;
+  $('#shareBtn').hidden = !run;
+  $('#waBtn').hidden = !run;
   $('#waBtn').href = whatsappLink(current, finaleTotal);
   show('finale');
   A.playMusic('wish');
@@ -540,8 +603,13 @@ $('#scoreForm').addEventListener('submit', async (e) => {
   if (!name) return;
   save.name = name;
   persist();
+  const run = prog(current).lastRun;
+  if (!run || run.submitted) return;
   $('#scoreForm button').disabled = true;
-  const { shared } = await submitScore({ name, character: CHARACTERS[current].name, score: finaleTotal });
+  run.submitted = true;
+  persist();
+  const { shared } = await submitScore({ name, character: CHARACTERS[current].name, score: run.total });
+  $('#scoreForm').hidden = true;
   $('#scoreMsg').textContent = shared
     ? 'Added to the shared high scores!'
     : isShared()

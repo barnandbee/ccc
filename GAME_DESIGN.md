@@ -44,7 +44,7 @@ Difficulty starts gentle and rises to moderate.
 1. **Boxing Day Leftovers**: gentle tutorial.
 2. **The Back-to-Work Commute**: rainy trains (the 07:52 to London Waterloo), emails. Ends with a boss: the **Reindeer Influencer**, who loses buzz while you look away from it, hops round to get back in front of you and lobs over-sponsored gifts. Attacking it counts as engagement and tops its buzz back up.
 3. **The Gym of Resolutions**: treadmills, kettlebells, "New Year New Me" enemies. Crieff Court can be seen through one of the windows.
-   - **Bonus 3½: Surf the Egg Nog Wave**: unlocked at 50 stars across all levels (best run per level). Endless ride on a wave of egg nog; three wipeouts and it's over. Scored on distance, stars and hazards smashed.
+   - **Bonus 3½: Surf the Egg Nog Wave**: unlocked at 100 stars across levels 1–3 (most stars per level). Endless ride on a wave of egg nog; three wipeouts and it's over. Scored on distance, stars and hazards smashed.
 4. **Blue Monday's Tax Office**: boss fight against the self-assessment deadline.
 
 Early levels have generous checkpoints and respawning. Later levels add trickier jumps and tougher enemies.
@@ -58,4 +58,5 @@ Early levels have generous checkpoints and respawning. Later levels add trickier
 
 - End message: "Merry Christmas and a fabulous 2027", from Barnaby, Cass and Junie (puppy).
 - A shareable image of the character and the player's score, for sending on WhatsApp.
+- High scores come only from a **full run**: start at level 1 and finish levels 1–4 in order (the bonus counts once, between 3 and 4). Restarting the current level is fine; playing any other level ends the run. Each finished run can be submitted once.
 - A shared high-score board through a free backend (Supabase or Firebase). Until that's configured, scores are stored locally.

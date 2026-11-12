@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Patrick+Hand&family=Patrick+Hand+SC&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=202611120832">
+  <link rel="stylesheet" href="css/style.css?v=202611120919">
 </head>
 <body>
   <div id="app">
@@ -63,6 +63,7 @@
             <li><b>Pause:</b> P or Esc</li>
           </ul>
           <p>Collect stars of Seasonal Spirit, find three hidden treasures in each level, and light the Christmas tree at the end. Jump on January's minions to cheer them up. If you run out of hearts, you'll go back to the last flag.</p>
+          <p>To get on the high-score board, do a full run: start at level 1 and finish all four levels in order. Restarting the level you're on is fine, but replaying an earlier level ends the run.</p>
           <p>Each character is unlocked by a question about their Christmas card, so keep your card handy.</p>
         </div>
         <button class="btn" data-go="title">Back</button>
@@ -167,7 +168,8 @@
           <p class="script">Merry Christmas and a fabulous 2027!</p>
           <p class="script">Love, Barnaby, Cass &amp; Junie <small>(woof)</small> x</p>
         </div>
-        <p class="total">Total score: <b id="finaleScore">0</b></p>
+        <p class="total">Full run score: <b id="finaleScore">0</b></p>
+        <p class="lead" id="runNote"></p>
         <form id="scoreForm" class="row">
           <input id="nameInput" type="text" maxlength="20" placeholder="Your name" aria-label="Your name" required>
           <button class="btn primary" type="submit">Add to high scores</button>
@@ -206,23 +208,23 @@
   <script type="importmap" id="versions">
 {
   "imports": {
-    "./js/audio.js": "./js/audio.js?v=202611120832",
-    "./js/characters.js": "./js/characters.js?v=202611120832",
-    "./js/config.js": "./js/config.js?v=202611120832",
-    "./js/draw.js": "./js/draw.js?v=202611120832",
-    "./js/game.js": "./js/game.js?v=202611120832",
-    "./js/input.js": "./js/input.js?v=202611120832",
-    "./js/levels.js": "./js/levels.js?v=202611120832",
-    "./js/lock.js": "./js/lock.js?v=202611120832",
-    "./js/locks.js": "./js/locks.js?v=202611120832",
-    "./js/main.js": "./js/main.js?v=202611120832",
-    "./js/scores.js": "./js/scores.js?v=202611120832",
-    "./js/share.js": "./js/share.js?v=202611120832",
-    "./js/sprites.js": "./js/sprites.js?v=202611120832",
-    "./js/surf.js": "./js/surf.js?v=202611120832"
+    "./js/audio.js": "./js/audio.js?v=202611120919",
+    "./js/characters.js": "./js/characters.js?v=202611120919",
+    "./js/config.js": "./js/config.js?v=202611120919",
+    "./js/draw.js": "./js/draw.js?v=202611120919",
+    "./js/game.js": "./js/game.js?v=202611120919",
+    "./js/input.js": "./js/input.js?v=202611120919",
+    "./js/levels.js": "./js/levels.js?v=202611120919",
+    "./js/lock.js": "./js/lock.js?v=202611120919",
+    "./js/locks.js": "./js/locks.js?v=202611120919",
+    "./js/main.js": "./js/main.js?v=202611120919",
+    "./js/scores.js": "./js/scores.js?v=202611120919",
+    "./js/share.js": "./js/share.js?v=202611120919",
+    "./js/sprites.js": "./js/sprites.js?v=202611120919",
+    "./js/surf.js": "./js/surf.js?v=202611120919"
   }
 }
   </script>
-  <script type="module" src="js/main.js?v=202611120832"></script>
+  <script type="module" src="js/main.js?v=202611120919"></script>
 </body>
 </html>
