@@ -96,6 +96,7 @@ The public key is designed to be seen by anyone. Row level security limits it to
 | `js/characters.js` | Tim, Rex and Junie, drawn in code |
 | `js/sprites.js` | January's minions, pickups, scenery and backgrounds |
 | `js/draw.js` | Wobbly biro drawing helpers |
+| `js/theme.js` | Light and dark themes: translates colours as they're drawn |
 | `js/audio.js` | Sound effects and carols (all public domain) |
 | `js/lock.js`, `js/locks.js` | Passcode checking and the encrypted cards |
 | `js/scores.js`, `js/config.js` | High scores |

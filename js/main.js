@@ -8,6 +8,7 @@ import { LEVELS } from './levels.js';
 import { initInput, initSwipe, initTouchSafety, releaseAll } from './input.js';
 import * as A from './audio.js';
 import * as D from './draw.js';
+import * as Theme from './theme.js';
 import * as S from './sprites.js';
 import { submitScore, topScores, isShared } from './scores.js';
 import { shareImage, whatsappLink } from './share.js';
@@ -22,9 +23,9 @@ const SAVE_KEY = 'ccc:save:v1';
 function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
-    if (s && typeof s === 'object') return { unlocked: {}, progress: {}, name: '', muted: false, seenStory: {}, controls: 'swipe', ...s };
+    if (s && typeof s === 'object') return { unlocked: {}, progress: {}, name: '', muted: false, seenStory: {}, controls: 'swipe', theme: 'auto', ...s };
   } catch { /* no save yet */ }
-  return { unlocked: {}, progress: {}, name: '', muted: false, seenStory: {}, controls: 'swipe' };
+  return { unlocked: {}, progress: {}, name: '', muted: false, seenStory: {}, controls: 'swipe', theme: 'auto' };
 }
 let save = loadSave();
 function persist() {
@@ -144,7 +145,9 @@ function paintCanvas(c, t) {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const pw = Math.round(cw * dpr), ph = Math.round(((cw * lh) / lw) * dpr);
   if (c.width !== pw || c.height !== ph) { c.width = pw; c.height = ph; }
+  // pictures on the menus follow the theme; ones on the real cards keep the card's colours
   const ctx = c.getContext('2d');
+  if (!c.dataset.tone || c.dataset.tone === 'paper') Theme.themeContext(ctx);
   ctx.setTransform(pw / lw, 0, 0, ph / lh, 0, 0);
   ctx.clearRect(0, 0, lw, lh);
   D.setBoil(t);
@@ -244,6 +247,27 @@ function updateMuteLabels() {
   $('#muteBtn').textContent = label;
   $('#pauseMute').textContent = label;
 }
+// ---------- Theme ----------
+// 'auto' follows the phone or computer's dark-mode setting
+const darkQuery = matchMedia('(prefers-color-scheme: dark)');
+function applyTheme() {
+  const dark = save.theme === 'dark' || (save.theme === 'auto' && darkQuery.matches);
+  Theme.setDark(dark);
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  document.querySelector('meta[name="theme-color"]').content = dark ? '#0b1020' : '#2a2f3d';
+  const label = `Theme: ${save.theme}`;
+  $('#themeBtn').textContent = label;
+  $('#pauseTheme').textContent = label;
+  paintVisible();
+  if (engine.running) engine.render();
+}
+function cycleTheme() {
+  save.theme = { auto: 'light', light: 'dark', dark: 'auto' }[save.theme] || 'auto';
+  persist();
+  applyTheme();
+}
+darkQuery.addEventListener?.('change', () => { if (save.theme === 'auto') applyTheme(); });
+
 function toggleMute() {
   save.muted = !save.muted;
   A.setMuted(save.muted);
@@ -648,6 +672,8 @@ document.querySelectorAll('[data-go]').forEach((b) => {
   });
 });
 $('#muteBtn').addEventListener('click', toggleMute);
+$('#themeBtn').addEventListener('click', cycleTheme);
+$('#pauseTheme').addEventListener('click', cycleTheme);
 $('#pauseMute').addEventListener('click', toggleMute);
 
 // ---------- Layout ----------
@@ -696,6 +722,7 @@ initSwipe($('#swipe'));
 initTouchSafety();
 updateMuteLabels();
 updateControlsLabel();
+applyTheme();
 resize();
 openTitle();
 const fontsReady = document.fonts?.ready || Promise.resolve();

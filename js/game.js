@@ -1,5 +1,6 @@
 // The platformer itself: physics, enemies, the boss and drawing.
 import * as D from './draw.js';
+import { themeContext, paperTone } from './theme.js';
 import * as S from './sprites.js';
 import { LEVELS, T, ROWS, TILE } from './levels.js';
 import { CHARACTERS } from './characters.js';
@@ -38,7 +39,7 @@ const CHEERS = {
 export class Game {
   constructor(canvas, hooks) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
+    this.ctx = themeContext(canvas.getContext('2d'));
     this.hooks = hooks;
     this.running = false;
     this.paused = false;
@@ -927,7 +928,7 @@ export class Game {
 
     ctx.save();
     ctx.translate(-cx, 0);
-    ctx.fillStyle = D.paperPattern(ctx, L.paper);
+    ctx.fillStyle = D.paperPattern(ctx, paperTone(L.paper));
     ctx.fillRect(cx, 0, VW, VH);
     ctx.restore();
 

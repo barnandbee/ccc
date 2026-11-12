@@ -4,6 +4,7 @@
 // Tim can glide and throw; Rex can sprint straight through hazards.
 // Three wipeouts and the ride is over. Score is distance ridden plus stars and smashes.
 import * as D from './draw.js';
+import { themeContext, paperTone } from './theme.js';
 import * as S from './sprites.js';
 import { CHARACTERS } from './characters.js';
 import { sfx, playMusic } from './audio.js';
@@ -23,7 +24,7 @@ const overlap = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h 
 export class Surf {
   constructor(canvas, hooks) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
+    this.ctx = themeContext(canvas.getContext('2d'));
     this.hooks = hooks;
     this.running = false;
     this.paused = false;
@@ -360,7 +361,7 @@ export class Surf {
     D.setBoil(this.time);
     D.setPaper('#f6efdf');
     ctx.setTransform(this.scale, 0, 0, this.scale, 0, 0);
-    ctx.fillStyle = D.paperPattern(ctx, '#f6efdf');
+    ctx.fillStyle = D.paperPattern(ctx, paperTone('#f6efdf'));
     ctx.fillRect(0, 0, VW, VH);
 
     this.drawSky(ctx);
@@ -394,10 +395,12 @@ export class Surf {
   }
 
   drawSky(ctx) {
+    // the moon is drawn brighter than the rest of the background
     ctx.save();
-    ctx.globalAlpha = 0.3;
+    ctx.globalAlpha = 0.75;
     D.pen(ctx, D.INK, 2);
-    D.circle(ctx, 820, 90, 34, { fill: 'rgba(241,200,75,0.5)' });
+    D.circle(ctx, 820, 90, 34, { fill: 'rgba(241,200,75,0.45)' });
+    ctx.globalAlpha = 0.3;
     // rooftops with fairy lights, far away
     const off = (this.dist * 0.15) % 220;
     const cols = [D.RED, D.GOLD, '#3b9ad9', '#4caf6a'];

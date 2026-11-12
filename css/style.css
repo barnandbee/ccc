@@ -318,3 +318,30 @@ body.playing, body.playing #app { touch-action: none; }
   transition: opacity 0.6s;
 }
 .hint.fade { opacity: 0; }
+
+/* ---------- Dark theme: silvery gel pen on navy card ---------- */
+:root[data-theme="dark"] {
+  --ink: #e2e9fa;
+  --ink-soft: rgba(226, 233, 250, 0.12);
+  --red: #ff6b74;
+  --paper: #172036;
+  --bg: #0b1020;
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  color-scheme: dark;
+}
+:root[data-theme="dark"] .screen.dim { background: rgba(5, 8, 18, 0.7); }
+:root[data-theme="dark"] .btn.primary:hover { background: #ffffff; }
+:root[data-theme="dark"] .iconbtn { background: rgba(23, 32, 54, 0.85); }
+:root[data-theme="dark"] .box,
+:root[data-theme="dark"] .ability,
+:root[data-theme="dark"] .level-tile { background: rgba(255, 255, 255, 0.05); }
+:root[data-theme="dark"] .level-tile.bonus { background: rgba(243, 226, 179, 0.14); }
+:root[data-theme="dark"] input[type='text'] { background: rgba(255, 255, 255, 0.08); }
+:root[data-theme="dark"] .msg.good { color: #7ee2a0; }
+:root[data-theme="dark"] .score-list li { border-bottom-color: rgba(226, 233, 250, 0.3); }
+:root[data-theme="dark"] .tbtn { color: rgba(226, 233, 250, 0.85); background: rgba(23, 32, 54, 0.25); border-color: rgba(226, 233, 250, 0.45); }
+:root[data-theme="dark"] .tbtn.down { background: rgba(226, 233, 250, 0.3); }
+:root[data-theme="dark"] .hint { background: rgba(23, 32, 54, 0.92); }
+:root[data-theme="dark"] .subtitle::before, :root[data-theme="dark"] .subtitle::after { color: #f1c84b; }
+/* the character cards keep their real card colours and blue biro in both themes */
+.card-paper, .char-tile { --ink: #1d4fb8; --red: #c8323c; color: var(--ink); }

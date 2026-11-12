@@ -225,10 +225,14 @@ export function paperPattern(ctx, tone) {
   const g = c.getContext('2d');
   g.fillStyle = tone;
   g.fillRect(0, 0, 256, 256);
+  // on dark card the light flecks need to be much fainter
+  const n = parseInt(tone.slice(1), 16);
+  const lum = ((n >> 16) & 255) * 0.3 + ((n >> 8) & 255) * 0.59 + (n & 255) * 0.11;
+  const light = lum < 90 ? 'rgba(255,255,255,0.045)' : 'rgba(255,255,255,0.18)';
   for (let i = 0; i < 2600; i++) {
     const x = hash(i * 3 + 1) * 256, y = hash(i * 5 + 2) * 256;
     const dark = hash(i * 7 + 3) > 0.5;
-    g.fillStyle = dark ? 'rgba(80,60,30,0.07)' : 'rgba(255,255,255,0.18)';
+    g.fillStyle = dark ? 'rgba(80,60,30,0.07)' : light;
     g.fillRect(x, y, 1 + hash(i) * 1.5, 1 + hash(i + 9) * 1.5);
   }
   g.strokeStyle = 'rgba(90,70,40,0.07)';
