@@ -90,8 +90,9 @@ The public key is designed to be seen by anyone. Row level security limits it to
 |---|---|
 | `index.html`, `css/style.css` | Menus, the redrawn character cards, touch buttons |
 | `js/main.js` | Screens, saving progress, unlocking, starting levels |
-| `js/game.js` | The platformer: physics, enemies, boss, drawing |
+| `js/game.js` | The platformer: physics, enemies, the two bosses, drawing |
 | `js/levels.js` | The four level layouts |
+| `js/surf.js` | Bonus level 3½: Surf the Egg Nog Wave |
 | `js/characters.js` | Tim, Rex and Junie, drawn in code |
 | `js/sprites.js` | January's minions, pickups, scenery and backgrounds |
 | `js/draw.js` | Wobbly biro drawing helpers |

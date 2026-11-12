@@ -3,6 +3,7 @@ import { CHARACTERS, ORDER, drawJunie } from './characters.js';
 import { LOCKS } from './locks.js';
 import { tryUnlock, decrypt } from './lock.js';
 import { Game, VW, VH } from './game.js';
+import { Surf, BONUS, BONUS_NAME } from './surf.js';
 import { LEVELS } from './levels.js';
 import { initInput, initSwipe, initTouchSafety, releaseAll } from './input.js';
 import * as A from './audio.js';
@@ -54,6 +55,9 @@ const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in win
 
 const canvas = $('#game');
 const game = new Game(canvas, { onComplete, onPause: pauseGame });
+const surf = new Surf(canvas, { onComplete, onPause: pauseGame });
+let engine = game; // whichever is running: the platformer or the bonus surf level
+const STARS_FOR_BONUS = 50;
 if (DEV) window.__game = game;
 
 // ---------- Screen management ----------
@@ -351,29 +355,52 @@ function totalScore(id) {
   const p = prog(id);
   return Object.values(p.best).reduce((sum, r) => sum + (r?.score || 0), 0);
 }
+// Most stars ever collected in each main level, added up
+function totalStars(id) {
+  const p = prog(id);
+  let sum = 0;
+  for (let i = 0; i < LEVELS.length; i++) sum += Math.max(p.stars?.[i] || 0, p.best[i]?.sparks || 0);
+  return sum;
+}
+function bonusOpen(id) {
+  return DEV || totalStars(id) >= STARS_FOR_BONUS;
+}
 function openLevels() {
   const ch = CHARACTERS[current];
   const p = prog(current);
   $('#levelsTitle').textContent = `${ch.first}'s adventure`;
   const list = $('#levelList');
   list.innerHTML = '';
-  LEVELS.forEach((L, i) => {
-    const open = DEV || i <= p.reached;
+  // the bonus level sits between levels 3 and 4
+  const order = [0, 1, 2, BONUS, 3];
+  for (const i of order) {
+    const bonus = i === BONUS;
+    const open = bonus ? bonusOpen(current) : DEV || i <= p.reached;
     const best = p.best[i];
     const btn = document.createElement('button');
-    btn.className = 'level-tile sketch';
+    btn.className = `level-tile sketch${bonus ? ' bonus' : ''}`;
     btn.disabled = !open;
+    let detail;
+    if (bonus) {
+      detail = !open
+        ? `Locked: collect ${STARS_FOR_BONUS} ★ across the levels<br>(${totalStars(current)} so far)`
+        : best ? `Best ${best.score.toLocaleString('en-GB')}<br>${best.distance} m · ★ ${best.sparks}` : 'Not played yet';
+    } else {
+      detail = !open ? 'Locked' : best
+        ? `Best ${best.score.toLocaleString('en-GB')}<br>★ ${best.sparks}/${best.total} · treasures ${best.secrets}/${best.secretTotal}`
+        : 'Not played yet';
+    }
     btn.innerHTML = `
-      <div class="n">Level ${i + 1}</div>
-      <div class="t">${esc(L.name)}</div>
-      <div class="b">${!open ? 'Locked' : best ? `Best ${best.score.toLocaleString('en-GB')}<br>★ ${best.sparks}/${best.total} · treasures ${best.secrets}/${best.secretTotal}` : 'Not played yet'}</div>`;
+      <div class="n">${bonus ? 'Bonus level 3½' : `Level ${i + 1}`}</div>
+      <div class="t">${esc(bonus ? BONUS_NAME : LEVELS[i].name)}</div>
+      <div class="b">${detail}</div>`;
     btn.addEventListener('click', () => {
       A.sfx.click();
       if (i === 0 && !save.seenStory[current]) openStory();
       else startLevel(i);
     });
     list.appendChild(btn);
-  });
+  }
   const total = totalScore(current);
   $('#levelsTotal').textContent = total ? `Total score: ${total.toLocaleString('en-GB')}` : '';
   $('#finaleReplay').hidden = !p.done;
@@ -404,14 +431,17 @@ function startLevel(i) {
   hidePages();
   setPlaying(true);
   releaseAll();
-  game.start(i, current, cards[current]);
+  if (engine !== (i === BONUS ? surf : game)) engine.stop();
+  engine = i === BONUS ? surf : game;
+  if (i === BONUS) surf.start(current, cards[current], prog(current).best[BONUS]?.distance || 0);
+  else game.start(i, current, cards[current]);
   checkRotate();
   showSwipeHint();
 }
 
 function pauseGame() {
-  if (!game.running || game.paused) return;
-  game.setPaused(true);
+  if (!engine.running || engine.paused) return;
+  engine.setPaused(true);
   releaseAll();
   openModal('pause');
 }
@@ -419,12 +449,12 @@ function resumeGame() {
   closeModal();
   releaseAll();
   setPlaying(true);
-  game.setPaused(false);
+  engine.setPaused(false);
 }
 $('#pauseBtn').addEventListener('click', pauseGame);
 $('#resumeBtn').addEventListener('click', resumeGame);
 $('#restartBtn').addEventListener('click', () => { closeModal(); startLevel(currentLevel); });
-$('#quitBtn').addEventListener('click', () => { game.stop(); openLevels(); });
+$('#quitBtn').addEventListener('click', () => { engine.stop(); openLevels(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
 
 function onComplete(result) {
@@ -432,17 +462,45 @@ function onComplete(result) {
   const prev = p.best[result.level];
   const isBest = !prev || result.score > prev.score;
   if (isBest) p.best[result.level] = result;
-  p.reached = Math.max(p.reached, Math.min(LEVELS.length - 1, result.level + 1));
-  if (result.level === LEVELS.length - 1) p.done = true;
+  const bonusWasOpen = bonusOpen(current);
+  if (!result.bonus) {
+    p.stars = p.stars || {};
+    p.stars[result.level] = Math.max(p.stars[result.level] || 0, result.sparks);
+    p.reached = Math.max(p.reached, Math.min(LEVELS.length - 1, result.level + 1));
+    if (result.level === LEVELS.length - 1) p.done = true;
+  }
   persist();
   lastResult = result;
-  game.setPaused(true);
+  engine.setPaused(true);
   setPlaying(false);
   if (result.level === LEVELS.length - 1) {
-    game.stop();
+    engine.stop();
     openFinale();
     return;
   }
+  const bestText = isBest ? (prev ? 'New best score!' : '') : `Best: ${prev.score.toLocaleString('en-GB')}`;
+  const next = $('#completeNext');
+  if (result.bonus) {
+    $('#completeTitle').textContent = 'Wiped out!';
+    $('#completeName').textContent = `Bonus: ${BONUS_NAME}`;
+    $('#completeStats').innerHTML = `
+      <tr><td>Distance ridden</td><td>${result.distance} m</td><td>${result.distance * 2}</td></tr>
+      <tr><td>★ Stars</td><td>${result.sparks}</td><td>${result.sparks * 4}</td></tr>
+      <tr><td>Hazards smashed</td><td>${result.smashed}</td><td>${result.smashed * 20}</td></tr>
+      <tr class="total"><td>Score</td><td></td><td>${result.score.toLocaleString('en-GB')}</td></tr>`;
+    $('#completeBest').textContent = bestText;
+    $('#completeRetry').textContent = 'Ride again';
+    next.hidden = !(DEV || p.reached >= 3);
+    next.textContent = 'Level 4';
+    next.dataset.go = '3';
+    openModal('complete');
+    return;
+  }
+  $('#completeTitle').textContent = 'Tree lit!';
+  $('#completeRetry').textContent = 'Replay';
+  next.hidden = false;
+  next.textContent = 'Next level';
+  next.dataset.go = String(result.level + 1);
   const mins = Math.floor(result.time / 60), secs = Math.floor(result.time % 60).toString().padStart(2, '0');
   const secretName = cards[current]?.secrets || 'treasures';
   $('#completeName').textContent = LEVELS[result.level].name;
@@ -454,12 +512,13 @@ function onComplete(result) {
     <tr><td>Tree lit</td><td></td><td>500</td></tr>
     <tr><td>Tumbles</td><td>${result.deaths}</td><td>${result.deaths ? -result.deaths * 50 : 0}</td></tr>
     <tr class="total"><td>Score</td><td></td><td>${result.score.toLocaleString('en-GB')}</td></tr>`;
-  $('#completeBest').textContent = isBest ? (prev ? 'New best score!' : '') : `Best: ${prev.score.toLocaleString('en-GB')}`;
+  const unlocked = !bonusWasOpen && bonusOpen(current) ? ` Bonus level unlocked: ${BONUS_NAME}!` : '';
+  $('#completeBest').textContent = bestText + unlocked;
   openModal('complete');
 }
-$('#completeNext').addEventListener('click', () => { game.stop(); startLevel(lastResult.level + 1); });
-$('#completeRetry').addEventListener('click', () => { game.stop(); startLevel(lastResult.level); });
-$('#completeLevels').addEventListener('click', () => { game.stop(); openLevels(); });
+$('#completeNext').addEventListener('click', (e) => { engine.stop(); startLevel(Number(e.currentTarget.dataset.go)); });
+$('#completeRetry').addEventListener('click', () => { engine.stop(); startLevel(lastResult.level); });
+$('#completeLevels').addEventListener('click', () => { engine.stop(); openLevels(); });
 
 // ---------- Finale ----------
 let finaleTotal = 0;
@@ -526,18 +585,18 @@ $('#pauseMute').addEventListener('click', toggleMute);
 // ---------- Layout ----------
 function checkRotate() {
   const portrait = window.innerHeight > window.innerWidth;
-  if (game.running && isTouch && portrait && !rotateDismissed) {
-    if (!game.paused) { game.setPaused(true); pausedForRotate = true; }
+  if (engine.running && isTouch && portrait && !rotateDismissed) {
+    if (!engine.paused) { engine.setPaused(true); pausedForRotate = true; }
     openModal('rotate');
   } else if ($('#s-rotate').classList.contains('active')) {
     closeModal();
-    if (pausedForRotate) { pausedForRotate = false; game.setPaused(false); }
+    if (pausedForRotate) { pausedForRotate = false; engine.setPaused(false); }
   }
 }
 $('#rotateAnyway').addEventListener('click', () => {
   rotateDismissed = true;
   closeModal();
-  if (pausedForRotate) { pausedForRotate = false; game.setPaused(false); }
+  if (pausedForRotate) { pausedForRotate = false; engine.setPaused(false); }
 });
 
 function resize() {
@@ -547,7 +606,9 @@ function resize() {
   if (h > H) { h = H; w = H * aspect; }
   canvas.style.width = `${Math.floor(w)}px`;
   canvas.style.height = `${Math.floor(h)}px`;
-  game.resize(Math.floor(w), Math.floor(h), Math.min(2, window.devicePixelRatio || 1));
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  game.resize(Math.floor(w), Math.floor(h), dpr);
+  surf.resize(Math.floor(w), Math.floor(h), dpr);
   checkRotate();
 }
 window.addEventListener('resize', resize);
@@ -557,7 +618,7 @@ window.addEventListener('orientationchange', () => setTimeout(resize, 200));
 function wakeAudio() {
   A.initAudio();
   A.setMuted(save.muted);
-  if (!game.running) A.playMusic($('#s-finale').classList.contains('active') ? 'wish' : 'jingle');
+  if (!engine.running) A.playMusic($('#s-finale').classList.contains('active') ? 'wish' : 'jingle');
 }
 window.addEventListener('pointerdown', wakeAudio, { once: true });
 window.addEventListener('keydown', wakeAudio, { once: true });

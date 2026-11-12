@@ -42,8 +42,9 @@ Only these two characters for now. Adding more later should only take a new data
 Difficulty starts gentle and rises to moderate.
 
 1. **Boxing Day Leftovers**: gentle tutorial.
-2. **The Back-to-Work Commute**: rainy trains, emails.
-3. **The Gym of Resolutions**: treadmills, kettlebells, "New Year New Me" enemies.
+2. **The Back-to-Work Commute**: rainy trains (the 07:52 to London Waterloo), emails. Ends with a boss: the **Reindeer Influencer**, who loses buzz while you look away from it, hops round to get back in front of you and lobs over-sponsored gifts. Attacking it counts as engagement and tops its buzz back up.
+3. **The Gym of Resolutions**: treadmills, kettlebells, "New Year New Me" enemies. Crieff Court can be seen through one of the windows.
+   - **Bonus 3½: Surf the Egg Nog Wave**: unlocked at 50 stars across all levels (best run per level). Endless ride on a wave of egg nog; three wipeouts and it's over. Scored on distance, stars and hazards smashed.
 4. **Blue Monday's Tax Office**: boss fight against the self-assessment deadline.
 
 Early levels have generous checkpoints and respawning. Later levels add trickier jumps and tougher enemies.

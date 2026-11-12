@@ -107,9 +107,9 @@ function level1() {
 }
 
 function level2() {
-  const b = new Builder(212);
+  const b = new Builder(242);
   b.ground(0, 24).begin(2);
-  b.sign(4, 'Monday morning. The 07:52 is delayed. Again.');
+  b.sign(4, 'Monday morning. The 07:52 to London Waterloo is delayed. Again.');
   b.sparkRow(6, 11, 4);
   b.enemy('walker', 12);
   b.block(16, 10, 3, 2).sparkRow(16, 9, 3);
@@ -147,15 +147,20 @@ function level2() {
     rex: 'Another long gap. Sprint in mid-air!',
   });
   b.sparkRow(152, 9, 6);
-  b.ground(159, 211);
   b.cp(162);
   b.enemy('flyer', 168, 7, { range: 2 }).enemy('flyer', 176, 6, { range: 3 });
   b.spikes(170, 11, 2);
   b.enemy('walker', 174).enemy('walker', 180);
   b.block(184, 10, 2, 2).plat(187, 7, 2).secret(188, 6);
   b.sparkRow(190, 11, 6);
-  b.sign(198, 'Nearly at work. Light the tree!');
-  b.end(204);
+  b.cp(197);
+  b.sign(199, "Something's blocking the platform. Whatever you do, don't give it any attention.");
+  // boss arena: the Reindeer Influencer
+  b.ground(159, 241);
+  b.block(238, 0, 4, 12);
+  b.plat(211, 8, 3).plat(226, 8, 3);
+  b.end(232);
+  b.boss = { type: 'reindeer', x: 228, gateX: 202, triggerX: 206, arenaX0: 202, arenaX1: 238 };
   return { ...b, id: 2, name: 'The Back-to-Work Commute', theme: 2, paper: '#eceeeb', par: 180, difficulty: 1 };
 }
 
@@ -240,7 +245,7 @@ function level4() {
   b.block(162, 0, 4, 12);
   b.plat(138, 8, 4).plat(151, 8, 4);
   b.end(156);
-  b.boss = { x: 152, gateX: 131, triggerX: 135, arenaX0: 131, arenaX1: 162 };
+  b.boss = { type: 'monday', x: 152, gateX: 131, triggerX: 135, arenaX0: 131, arenaX1: 162 };
   return { ...b, id: 4, name: "Blue Monday's Tax Office", theme: 4, paper: '#e3d1b0', par: 220, difficulty: 3 };
 }
 

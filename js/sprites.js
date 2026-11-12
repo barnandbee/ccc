@@ -138,6 +138,84 @@ export function drawBoss(ctx, t, o = {}) {
   D.scribble(ctx, x - 12, y - 8, w + 24, 18, Math.floor(t * 7), 8);
 }
 
+// ---------- Boss: the Reindeer Influencer ----------
+// Drawn facing right with hooves at (0,0). Puffs up when watched, droops when ignored.
+export function drawReindeer(ctx, t, o = {}) {
+  const fur = 'rgba(176,122,78,0.6)';
+  const watched = o.watched;
+  const s = 0.85 + 0.25 * (o.buzz ?? 1);
+  ctx.save();
+  ctx.scale(s, s);
+  if (!watched) ctx.rotate(-0.06 + Math.sin(t * 2) * 0.02);
+  D.pen(ctx, INK, 2.4);
+  const bob = watched ? Math.sin(t * 8) * 2 : 0;
+  // legs and hooves
+  D.line(ctx, -9, -30, -11, -3, 0.5);
+  D.line(ctx, 9, -30, 11, -3, 0.5);
+  D.ellipse(ctx, -12, -2, 6, 3, { fill: INK, amt: 0.3 });
+  D.ellipse(ctx, 12, -2, 6, 3, { fill: INK, amt: 0.3 });
+  // body
+  D.ellipse(ctx, 0, -50 + bob, 22, 26, { fill: fur });
+  D.ellipse(ctx, 3, -46 + bob, 11, 16, { fill: 'rgba(255,240,220,0.8)', amt: 0.4 });
+  // scarf
+  D.rect(ctx, -14, -76 + bob, 28, 7, { fill: 'rgba(200,50,60,0.85)', amt: 0.4 });
+  D.poly(ctx, [[-10, -70 + bob], [-14, -56 + bob], [-7, -56 + bob], [-5, -70 + bob]], { fill: 'rgba(200,50,60,0.85)', amt: 0.3 });
+  // arm holding a selfie stick and phone
+  const raise = o.throwing ? -12 : 0;
+  D.line(ctx, 15, -62 + bob, 30, -84 + bob + raise, 0.4);
+  D.line(ctx, 30, -84 + bob + raise, 44, -122 + raise, 0.3);
+  D.rect(ctx, 38, -140 + raise, 14, 22, { fill: true, amt: 0.3 });
+  D.rect(ctx, 39, -138 + raise, 12, 6, { fill: D.RED, amt: 0.2 });
+  D.text(ctx, 'LIVE', 45, -135 + raise, 6, { color: '#fff' });
+  // other arm: waving at the camera
+  const wave = Math.sin(t * (watched ? 10 : 3)) * 6;
+  D.line(ctx, -15, -62 + bob, -28, -80 + wave + bob, 0.4);
+  // head
+  const hy = -88 + bob;
+  D.ellipse(ctx, -12, hy - 8, 4, 7, { fill: fur, rot: -0.6, amt: 0.3 });
+  D.ellipse(ctx, 12, hy - 8, 4, 7, { fill: fur, rot: 0.6, amt: 0.3 });
+  D.ellipse(ctx, 0, hy, 14, 13, { fill: fur });
+  D.ellipse(ctx, 10, hy + 5, 9, 7, { fill: 'rgba(255,240,220,0.9)', amt: 0.3 });
+  D.dot(ctx, 18, hy + 3, 3.2, INK);
+  // sunglasses
+  D.rect(ctx, -8, hy - 5, 8, 6, { fill: INK, amt: 0.2 });
+  D.rect(ctx, 2, hy - 5, 8, 6, { fill: INK, amt: 0.2 });
+  D.line(ctx, 0, hy - 3, 2, hy - 3, 0.2);
+  // mouth: grinning when watched, wobbly when ignored
+  if (watched) D.arc(ctx, 9, hy + 7, 5, 3, 0.2, Math.PI - 0.2, 0.2);
+  else D.zigzag(ctx, 5, hy + 9, 14, hy + 9, 1.2, 4);
+  // antlers
+  for (const sg of [-1, 1]) {
+    const bx = sg * 6, by = hy - 11;
+    D.curve(ctx, [[bx, by], [bx + sg * 6, by - 14], [bx + sg * 14, by - 26]], 0.5);
+    D.line(ctx, bx + sg * 6, by - 14, bx + sg * 14, by - 14, 0.4);
+    D.line(ctx, bx + sg * 11, by - 22, bx + sg * 6, by - 30, 0.4);
+  }
+  // sweat drops when ignored
+  if (!watched) {
+    for (let i = 0; i < 2; i++) {
+      const k = (t * 1.5 + i * 0.5) % 1;
+      D.pen(ctx, '#3b9ad9', 1.8);
+      D.ellipse(ctx, -16 - i * 4, hy - 4 + k * 18, 2, 3, { amt: 0.1 });
+    }
+  }
+  ctx.restore();
+}
+
+// An over-sponsored present
+export function drawGift(ctx, rot, label) {
+  ctx.save();
+  ctx.rotate(rot * 0.4);
+  D.pen(ctx, INK, 2);
+  D.rect(ctx, -14, -12, 28, 24, { fill: 'rgba(224,122,208,0.55)', amt: 0.5 });
+  D.line(ctx, 0, -12, 0, 12, 0.3);
+  D.line(ctx, -14, 0, 14, 0, 0.3);
+  D.ellipse(ctx, -5, -15, 5, 3, { rot: -0.4, amt: 0.2 });
+  D.ellipse(ctx, 5, -15, 5, 3, { rot: 0.4, amt: 0.2 });
+  ctx.restore();
+  D.text(ctx, label, 0, -26, 11, { color: D.RED });
+}
+
 export function drawPaperMissile(ctx, rot) {
   ctx.save();
   ctx.rotate(rot);
@@ -362,7 +440,7 @@ function bgPiece(ctx, theme, k, x) {
     } else if (r < 0.7) {
       // departure board
       D.rect(ctx, x + 40, 120, 200, 90, { fill: true });
-      D.text(ctx, '07:52  LONDON', x + 140, 145, 17);
+      D.text(ctx, '07:52 LONDON WATERLOO', x + 140, 145, 15);
       D.text(ctx, 'DELAYED', x + 140, 175, 22, { color: D.RED });
       D.line(ctx, x + 80, 210, x + 80, y0);
       D.line(ctx, x + 200, 210, x + 200, y0);
@@ -374,7 +452,28 @@ function bgPiece(ctx, theme, k, x) {
       D.text(ctx, 'Mind the gap', x + 160, 400, 16);
     }
   } else if (theme === 3) {
-    if (r < 0.35) {
+    if (k === 9) {
+      // a big gym window looking out on a block of flats: Crieff Court
+      D.rect(ctx, x + 10, 90, 280, 330, { fill: true });
+      D.line(ctx, x + 150, 90, x + 150, 420);
+      D.line(ctx, x + 10, 255, x + 290, 255);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x + 12, 92, 276, 326);
+      ctx.clip();
+      D.rect(ctx, x + 55, 150, 190, 290);
+      D.rect(ctx, x + 85, 118, 130, 30, { fill: true });
+      D.text(ctx, 'CRIEFF COURT', x + 150, 134, 19, { sc: true });
+      for (let row = 0; row < 7; row++) {
+        for (let col = 0; col < 5; col++) {
+          const wx = x + 68 + col * 35, wy = 162 + row * 38;
+          D.rect(ctx, wx, wy, 22, 24);
+          if (D.hash(row * 7 + col * 13) > 0.6) D.line(ctx, wx + 3, wy + 20, wx + 19, wy + 4, 0.3);
+        }
+      }
+      D.rect(ctx, x + 130, 400, 40, 40);
+      ctx.restore();
+    } else if (r < 0.35) {
       D.rect(ctx, x + 40, 120, 150, 110, { fill: true });
       D.text(ctx, 'NEW YEAR', x + 115, 150, 24, { sc: true });
       D.text(ctx, 'NEW ME', x + 115, 185, 30, { sc: true });

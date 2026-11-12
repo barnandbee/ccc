@@ -18,6 +18,16 @@ const approach = (v, target, d) => (v < target ? Math.min(v + d, target) : Math.
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const overlap = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
+const REINDEER_SELLS = [
+  'Use code REINDEER for 10% off!', 'Swipe up for festive savings!', 'This jumper? #gifted',
+  'Link in bio!', 'Limited edition tinsel, only 9,000 left!', 'Smash that like button!',
+];
+const REINDEER_PLEADS = [
+  'Look at me!', 'Hello?? Over here!', "Don't scroll past!", 'My engagement is dropping...',
+  "I'm literally giving away a sleigh!", 'Is this thing on?',
+];
+const GIFT_LABELS = ['#AD', 'SWIPE UP', '#GIFTED', 'LINK IN BIO', '50% OFF*', 'SPONSORED'];
+
 const CHEERS = {
   1: ['cheered up!', 'un-sprouted!', 'festive again!'],
   2: ['unsubscribed!', 'archived!', 'marked as read!'],
@@ -143,11 +153,15 @@ export class Game {
   }
 
   makeBoss(b) {
-    const w = 84, h = 104;
+    const reindeer = b.type === 'reindeer';
+    const w = reindeer ? 56 : 84, h = reindeer ? 100 : 104;
     return {
-      ...b, x: b.x * T, y: 12 * T - h, w, h, vx: 0, vy: 0, hp: 8, maxHp: 8,
-      state: 'walk', timer: 2, inv: 0, dir: -1, active: false, dead: false, deathT: 0,
+      ...b, x: b.x * T, y: 12 * T - h, w, h, vx: 0, vy: 0,
+      // Blue Monday has hit points; the Reindeer Influencer has "buzz", drained by being ignored
+      hp: reindeer ? 100 : 8, maxHp: reindeer ? 100 : 8,
+      state: reindeer ? 'pose' : 'walk', timer: 2, inv: 0, dir: -1, active: false, dead: false, deathT: 0,
       throwing: 0, intro: 0, t: 0, thrown: 0, canRide: false, homeX: b.x * T,
+      throwT: 1, talk: 0, line: '', watched: false,
       heavy: true, // too big for the ledges: falls straight through them
     };
   }
@@ -437,12 +451,14 @@ export class Game {
       this.gateClosed = true;
       for (let ty = 3; ty < 12; ty++) this.setTile(b.gateX, ty, TILE.SOLID);
       b.active = true;
-      b.intro = 1.6;
-      b.state = 'walk';
+      b.intro = 1.8;
+      b.state = b.type === 'reindeer' ? 'pose' : 'walk';
       b.timer = 2;
-      playMusic('godrest');
+      b.throwT = 1.2;
+      playMusic(b.type === 'reindeer' ? 'deck' : 'godrest');
       this.shake = 0.3;
       sfx.slam();
+      if (b.type === 'reindeer') this.toast('Look away from it to drain its buzz!');
     }
 
     // exit
@@ -551,7 +567,7 @@ export class Game {
       }
       const b = this.boss;
       if (s.life > 0 && b && b.active && !b.dead && overlap(box, b)) {
-        this.damageBoss();
+        if (b.type === 'reindeer') this.engage(b); else this.damageBoss();
         s.life = 0;
       }
     }
@@ -575,6 +591,12 @@ export class Game {
       b.intro -= dt;
       return;
     }
+    if (b.type === 'reindeer') this.updateReindeer(dt, b);
+    else this.updateMonday(dt, b);
+    this.updateMissiles(dt);
+  }
+
+  updateMonday(dt, b) {
     const p = this.player;
     const pcx = p.x + p.w / 2, bcx = b.x + b.w / 2;
     const angry = b.hp <= b.maxHp / 2;
@@ -621,6 +643,119 @@ export class Game {
     this.moveY(b, b.vy * dt);
     if (b.state === 'leap' && !b.onGround) b.timer = 0;
 
+    if (this.state === 'play' && p.dead <= 0 && overlap(p, b)) {
+      if (p.vy > 0 && p.y + p.h - b.y < 22) {
+        this.damageBoss();
+        p.vy = -760;
+        sfx.stomp();
+      } else if (p.sprintT > 0) {
+        this.damageBoss();
+        p.sprintT = 0;
+        p.vx = -p.facing * 320;
+        p.vy = -420;
+        p.inv = Math.max(p.inv, 0.5);
+      } else {
+        this.hurt(bcx);
+      }
+    }
+  }
+
+  // The Reindeer Influencer feeds on attention. Facing it tops up its buzz;
+  // facing away drains it. It keeps hopping round to get in front of you, and
+  // attacking it only counts as more engagement.
+  updateReindeer(dt, b) {
+    const p = this.player;
+    const pcx = p.x + p.w / 2, bcx = b.x + b.w / 2;
+    const angry = b.hp <= b.maxHp / 2;
+    const alive = p.dead <= 0 && this.state === 'play';
+    b.watched = alive && p.facing === (Math.sign(bcx - pcx) || 1);
+    if (alive) {
+      if (b.watched) b.hp = Math.min(b.maxHp, b.hp + 5 * dt);
+      else b.hp -= 7 * dt;
+    }
+    b.dir = Math.sign(pcx - bcx) || 1;
+    b.talk -= dt;
+    if (b.talk <= 0) {
+      const lines = b.watched ? REINDEER_SELLS : REINDEER_PLEADS;
+      b.line = lines[Math.floor(Math.random() * lines.length)];
+      b.talk = 2.4;
+    }
+    if (b.watched && Math.random() < dt * 3) this.burst(bcx + (Math.random() - 0.5) * 50, b.y, 1, 'heart');
+
+    if (b.onGround) {
+      if (b.state === 'hop') {
+        b.state = 'pose';
+        b.timer = angry ? 2.3 : 3.2;
+        b.throwT = 0.7;
+      }
+      b.vx = 0;
+      b.timer -= dt;
+      b.throwT -= dt;
+      if (b.throwT <= 0) {
+        const n = angry ? 2 : 1;
+        for (let i = 0; i < n; i++) {
+          // aim the arc so it comes down where the player is standing (missiles fall at 900 px/s/s)
+          const x0 = bcx, y0 = b.y + 30, vy = -560 - i * 90;
+          const ty = p.y + p.h / 2;
+          const tFlight = (-vy + Math.sqrt(vy * vy - 4 * 450 * (y0 - ty))) / 900;
+          const lead = p.vx * 0.5 + (Math.random() - 0.5) * 60;
+          this.missiles.push({
+            kind: 'gift', label: GIFT_LABELS[Math.floor(Math.random() * GIFT_LABELS.length)],
+            x: x0, y: y0, vx: clamp((pcx + lead - x0) / tFlight, -420, 420), vy, rot: 0,
+          });
+        }
+        b.throwing = 0.3;
+        b.throwT = angry ? 1.5 : 2;
+        sfx.bossThrow();
+      }
+      if (b.timer <= 0) {
+        // hop round to land right in front of the player
+        const lo = b.arenaX0 * T + 70, hi = b.arenaX1 * T - 70;
+        let target = pcx + p.facing * 240;
+        if (target < lo || target > hi) target = pcx - p.facing * 240;
+        target = clamp(target, lo, hi);
+        b.vy = -820;
+        b.vx = (target - bcx) / 0.78;
+        b.state = 'hop';
+        b.onGround = false;
+        sfx.jump();
+      }
+    }
+    b.vy = Math.min(b.vy + GRAV * dt, MAX_FALL);
+    this.moveX(b, b.vx * dt);
+    this.moveY(b, b.vy * dt);
+
+    if (b.hp <= 0) { this.defeatBoss(); return; }
+
+    if (this.state === 'play' && p.dead <= 0 && overlap(p, b)) {
+      if (p.vy > 0 && p.y + p.h - b.y < 24) {
+        this.engage(b);
+        p.vy = -760;
+        sfx.stomp();
+      } else if (p.sprintT > 0) {
+        this.engage(b);
+        p.sprintT = 0;
+        p.vx = -p.facing * 320;
+        p.vy = -420;
+        p.inv = Math.max(p.inv, 0.5);
+      } else {
+        this.hurt(bcx);
+      }
+    }
+  }
+
+  // Attacking the influencer is still engagement
+  engage(b) {
+    if (b.inv > 0) return;
+    b.inv = 0.6;
+    b.hp = Math.min(b.maxHp, b.hp + 12);
+    sfx.engage();
+    this.toast('It loves the engagement! Buzz up.');
+    this.burst(b.x + b.w / 2, b.y, 3, 'heart');
+  }
+
+  updateMissiles(dt) {
+    const p = this.player;
     for (const m of this.missiles) {
       m.vy += 900 * dt;
       m.x += m.vx * dt;
@@ -642,22 +777,6 @@ export class Game {
       if (isSolid(this.tileAt(Math.floor(w.x / T), 11))) w.life = 0;
     }
     this.waves = this.waves.filter((w) => w.life > 0);
-
-    if (this.state === 'play' && p.dead <= 0 && overlap(p, b)) {
-      if (p.vy > 0 && p.y + p.h - b.y < 22) {
-        this.damageBoss();
-        p.vy = -760;
-        sfx.stomp();
-      } else if (p.sprintT > 0) {
-        this.damageBoss();
-        p.sprintT = 0;
-        p.vx = -p.facing * 320;
-        p.vy = -420;
-        p.inv = Math.max(p.inv, 0.5);
-      } else {
-        this.hurt(bcx);
-      }
-    }
   }
 
   damageBoss() {
@@ -668,20 +787,26 @@ export class Game {
     sfx.bossHit();
     this.shake = 0.2;
     this.burst(b.x + b.w / 2, b.y + 30, 10, 'dot');
-    if (b.hp <= 0) {
-      b.dead = true;
-      b.deathT = 1.8;
-      this.missiles = [];
-      this.waves = [];
-      this.burst(b.x + b.w / 2, b.y + b.h / 2, 60, 'confetti');
-      this.toast('Blue Monday has been cancelled!');
-      this.exit.visible = true;
-      this.exit.drop = 1;
-      sfx.win();
-      playMusic('deck');
-    } else if (b.hp === b.maxHp / 2) {
-      this.toast('Blue Monday is getting cross...');
-    }
+    if (b.hp <= 0) this.defeatBoss();
+    else if (b.hp === b.maxHp / 2) this.toast('Blue Monday is getting cross...');
+  }
+
+  defeatBoss() {
+    const b = this.boss;
+    if (b.dead) return;
+    b.dead = true;
+    b.hp = 0;
+    b.deathT = 1.8;
+    this.missiles = [];
+    this.waves = [];
+    this.burst(b.x + b.w / 2, b.y + b.h / 2, 60, 'confetti');
+    this.toast(b.type === 'reindeer'
+      ? 'The Reindeer Influencer has lost all its followers!'
+      : 'Blue Monday has been cancelled!');
+    this.exit.visible = true;
+    this.exit.drop = 1;
+    sfx.win();
+    playMusic(b.type === 'reindeer' ? LEVEL_MUSIC[this.levelIndex] : 'deck');
   }
 
   // ---------- Damage and respawn ----------
@@ -725,7 +850,7 @@ export class Game {
       b.x = b.homeX;
       b.y = 12 * T - b.h;
       b.vx = b.vy = 0;
-      b.state = 'walk';
+      b.state = b.type === 'reindeer' ? 'pose' : 'walk';
       playMusic(LEVEL_MUSIC[this.levelIndex]);
     }
     this.cam.x = clamp(this.spawn.x - VW / 3, 0, this.Wpx - VW);
@@ -889,13 +1014,22 @@ export class Game {
         ctx.rotate((1 - k) * 0.8);
         ctx.scale(k, k);
       }
-      S.drawBoss(ctx, this.time, { hurt: b.inv, throwing: b.throwing > 0 });
+      if (b.type === 'reindeer') {
+        ctx.scale(b.dir, 1);
+        S.drawReindeer(ctx, this.time, { watched: b.watched, buzz: b.hp / b.maxHp, throwing: b.throwing > 0 });
+      } else {
+        S.drawBoss(ctx, this.time, { hurt: b.inv, throwing: b.throwing > 0 });
+      }
       ctx.restore();
+      if (b.type === 'reindeer' && b.active && !b.dead && b.intro <= 0 && b.line) {
+        S.drawBubble(ctx, b.line, clamp(b.x + b.w / 2, cx + 170, cx + VW - 170), b.y - 34, 220);
+      }
     }
     for (const m of this.missiles) {
       ctx.save();
       ctx.translate(m.x, m.y);
-      S.drawPaperMissile(ctx, m.rot);
+      if (m.kind === 'gift') S.drawGift(ctx, m.rot, m.label);
+      else S.drawPaperMissile(ctx, m.rot);
       ctx.restore();
     }
     D.pen(ctx, D.GLOOM, 2.4);
@@ -1094,7 +1228,23 @@ export class Game {
     }
 
     const b = this.boss;
-    if (b && b.active && !b.dead) {
+    if (b && b.active && !b.dead && b.type === 'reindeer') {
+      // sits right of the treasure icons, clear of the pause button
+      const bx = 420, bw = 220;
+      D.text(ctx, 'REINDEER INFLUENCER', bx + bw / 2, 24, 22, { sc: true, color: D.INK });
+      D.pen(ctx, D.INK, 2);
+      D.rect(ctx, bx, 40, bw, 14, { amt: 0.5 });
+      ctx.fillStyle = 'rgba(224,122,208,0.75)';
+      ctx.fillRect(bx + 2, 42, (bw - 4) * Math.max(0, b.hp / b.maxHp), 10);
+      D.text(ctx, 'buzz', bx + bw + 10, 47, 18, { align: 'left' });
+      if (b.intro > 0) {
+        D.text(ctx, 'Reindeer Influencer', VW / 2, 200, 60, { sc: true });
+        D.text(ctx, "it lives for your attention. Don't give it any.", VW / 2, 250, 26);
+      } else {
+        D.text(ctx, b.watched ? "You're looking at it! Its buzz is going up." : 'Ignoring it... its buzz is draining.',
+          bx + bw / 2, 72, 18, { color: b.watched ? D.RED : D.INK });
+      }
+    } else if (b && b.active && !b.dead) {
       D.text(ctx, 'BLUE MONDAY', VW / 2, 26, 24, { sc: true, color: D.GLOOM });
       D.pen(ctx, D.GLOOM, 2);
       for (let i = 0; i < b.maxHp; i++) {

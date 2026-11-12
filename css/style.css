@@ -243,6 +243,7 @@ input[type='text']:focus { outline: 3px solid rgba(241, 200, 75, 0.7); }
 .level-tile .t { font-family: 'Patrick Hand SC', cursive; font-size: 1.35rem; line-height: 1.1; margin: 4px 0; }
 .level-tile .b { font-size: 1rem; }
 .level-tile:disabled { opacity: 0.4; cursor: default; }
+.level-tile.bonus { background: rgba(243, 226, 179, 0.7); border-style: dashed; }
 .level-tile:not(:disabled):hover { background: var(--ink-soft); }
 
 .story { font-size: 1.3rem; }
