@@ -77,11 +77,12 @@ Out of the box, scores are saved on each player's device. To share one high-scor
    alter table scores enable row level security;
    create policy "anyone can read scores" on scores for select using (true);
    create policy "anyone can add a score" on scores for insert with check (true);
+   grant select, insert on table scores to anon;
    ```
 
-3. In **Project settings → API**, copy the project URL and the `anon` public key into `js/config.js`.
+3. Copy the **Project URL** and the public key into `js/config.js`. The public key is called the **publishable key** (starting `sb_publishable_`) in newer projects, or the **anon** key in older ones. Never use the secret or `service_role` key, because it bypasses the security rules.
 
-The anon key is designed to be public. Row level security limits it to reading and adding scores. Scores aren't verified, so a friend who's good with browser tools could post a fake one.
+The public key is designed to be seen by anyone. Row level security limits it to reading and adding scores. Scores aren't verified, so a friend who's good with browser tools could post a fake one.
 
 ## Code layout
 

@@ -15,11 +15,12 @@ function writeLocal(list) {
 }
 
 function headers() {
-  return {
-    apikey: CONFIG.supabaseAnonKey,
-    Authorization: `Bearer ${CONFIG.supabaseAnonKey}`,
-    'Content-Type': 'application/json',
-  };
+  const key = CONFIG.supabaseAnonKey;
+  const h = { apikey: key, 'Content-Type': 'application/json' };
+  // Older "anon" keys are JWTs (eyJ...) and also go in Authorization.
+  // Newer "sb_publishable_..." keys must only be sent as apikey.
+  if (key.startsWith('eyJ')) h.Authorization = `Bearer ${key}`;
+  return h;
 }
 
 export async function submitScore({ name, character, score }) {
