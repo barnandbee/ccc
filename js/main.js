@@ -4,7 +4,7 @@ import { LOCKS } from './locks.js';
 import { tryUnlock, decrypt } from './lock.js';
 import { Game, VW, VH } from './game.js';
 import { LEVELS } from './levels.js';
-import { initInput, releaseAll } from './input.js';
+import { initInput, initSwipe, initTouchSafety, releaseAll } from './input.js';
 import * as A from './audio.js';
 import * as D from './draw.js';
 import * as S from './sprites.js';
@@ -21,9 +21,9 @@ const SAVE_KEY = 'ccc:save:v1';
 function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
-    if (s && typeof s === 'object') return { unlocked: {}, progress: {}, name: '', muted: false, seenStory: {}, ...s };
+    if (s && typeof s === 'object') return { unlocked: {}, progress: {}, name: '', muted: false, seenStory: {}, controls: 'swipe', ...s };
   } catch { /* no save yet */ }
-  return { unlocked: {}, progress: {}, name: '', muted: false, seenStory: {} };
+  return { unlocked: {}, progress: {}, name: '', muted: false, seenStory: {}, controls: 'swipe' };
 }
 let save = loadSave();
 function persist() {
@@ -74,9 +74,36 @@ function closeModal() {
   document.querySelectorAll('.screen.dim').forEach((s) => s.classList.remove('active'));
 }
 function setPlaying(on) {
-  $('#touch').hidden = !(on && isTouch);
+  const swipe = save.controls !== 'buttons';
+  document.body.classList.toggle('playing', on);
+  $('#touch').hidden = !(on && isTouch && !swipe);
+  $('#swipe').hidden = !(on && isTouch && swipe);
   $('#pauseBtn').hidden = !on;
+  if (!on) $('#swipeHint').hidden = true;
 }
+
+let hintTimer = null;
+function showSwipeHint() {
+  if (!isTouch || save.controls === 'buttons') return;
+  const h = $('#swipeHint');
+  clearTimeout(hintTimer);
+  h.hidden = false;
+  h.classList.remove('fade');
+  hintTimer = setTimeout(() => {
+    h.classList.add('fade');
+    hintTimer = setTimeout(() => { h.hidden = true; }, 700);
+  }, 5000);
+}
+
+function updateControlsLabel() {
+  $('#controlsBtn').hidden = !isTouch;
+  $('#controlsBtn').textContent = `Controls: ${save.controls === 'buttons' ? 'buttons' : 'swipe'}`;
+}
+$('#controlsBtn').addEventListener('click', () => {
+  save.controls = save.controls === 'buttons' ? 'swipe' : 'buttons';
+  persist();
+  updateControlsLabel();
+});
 
 // ---------- Portrait canvases (redrawn a few times a second so the lines boil) ----------
 function drawMystery(ctx, w, h) {
@@ -379,6 +406,7 @@ function startLevel(i) {
   releaseAll();
   game.start(i, current, cards[current]);
   checkRotate();
+  showSwipeHint();
 }
 
 function pauseGame() {
@@ -390,6 +418,7 @@ function pauseGame() {
 function resumeGame() {
   closeModal();
   releaseAll();
+  setPlaying(true);
   game.setPaused(false);
 }
 $('#pauseBtn').addEventListener('click', pauseGame);
@@ -534,7 +563,10 @@ window.addEventListener('pointerdown', wakeAudio, { once: true });
 window.addEventListener('keydown', wakeAudio, { once: true });
 
 initInput(document);
+initSwipe($('#swipe'));
+initTouchSafety();
 updateMuteLabels();
+updateControlsLabel();
 resize();
 openTitle();
 const fontsReady = document.fonts?.ready || Promise.resolve();

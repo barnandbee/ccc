@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Patrick+Hand&family=Patrick+Hand+SC&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=202611112010">
+  <link rel="stylesheet" href="css/style.css?v=202611120225">
 </head>
 <body>
   <div id="app">
@@ -28,6 +28,8 @@
         <button class="tbtn jump" data-action="jump" aria-label="Jump">▲</button>
       </div>
     </div>
+    <div id="swipe" hidden></div>
+    <div id="swipeHint" class="hint" hidden aria-live="polite"><b>Slide</b> left or right to run · <b>Flick up</b> to jump (keep your finger down to go higher) · <b>Tap</b> for your special move</div>
     <button id="pauseBtn" class="iconbtn" hidden aria-label="Pause">❚❚</button>
 
     <!-- Title -->
@@ -54,9 +56,10 @@
         <div class="box sketch">
           <p>January has come early, and it's draining the Seasonal Spirit out of Christmas. Run, jump and use your character's special move to get through four levels of January gloom, then face Blue Monday himself.</p>
           <ul class="keys">
-            <li><b>Move:</b> ← → or A D (on a phone, ◀ ▶)</li>
-            <li><b>Jump:</b> ↑, W, Space or Z (▲). Hold it to jump higher.</li>
-            <li><b>Special move:</b> X or Shift (★)</li>
+            <li><b>Move:</b> ← → or A D. On a phone, slide a finger left or right.</li>
+            <li><b>Jump:</b> ↑, W, Space or Z. On a phone, flick up. Hold the key, or keep your finger down, to jump higher.</li>
+            <li><b>Special move:</b> X or Shift. On a phone, tap.</li>
+            <li>Prefer on-screen buttons? Pause the game and switch Controls to buttons.</li>
             <li><b>Pause:</b> P or Esc</li>
           </ul>
           <p>Collect stars of Seasonal Spirit, find three hidden treasures in each level, and light the Christmas tree at the end. Jump on January's minions to cheer them up. If you run out of hearts, you'll go back to the last flag.</p>
@@ -148,6 +151,7 @@
           <button class="btn primary" id="resumeBtn">Resume</button>
           <button class="btn" id="restartBtn">Restart level</button>
           <button class="btn" id="pauseMute">Sound: on</button>
+          <button class="btn" id="controlsBtn" hidden>Controls: swipe</button>
           <button class="btn" id="quitBtn">Quit to levels</button>
         </div>
       </div>
@@ -202,22 +206,22 @@
   <script type="importmap" id="versions">
 {
   "imports": {
-    "./js/audio.js": "./js/audio.js?v=202611112010",
-    "./js/characters.js": "./js/characters.js?v=202611112010",
-    "./js/config.js": "./js/config.js?v=202611112010",
-    "./js/draw.js": "./js/draw.js?v=202611112010",
-    "./js/game.js": "./js/game.js?v=202611112010",
-    "./js/input.js": "./js/input.js?v=202611112010",
-    "./js/levels.js": "./js/levels.js?v=202611112010",
-    "./js/lock.js": "./js/lock.js?v=202611112010",
-    "./js/locks.js": "./js/locks.js?v=202611112010",
-    "./js/main.js": "./js/main.js?v=202611112010",
-    "./js/scores.js": "./js/scores.js?v=202611112010",
-    "./js/share.js": "./js/share.js?v=202611112010",
-    "./js/sprites.js": "./js/sprites.js?v=202611112010"
+    "./js/audio.js": "./js/audio.js?v=202611120225",
+    "./js/characters.js": "./js/characters.js?v=202611120225",
+    "./js/config.js": "./js/config.js?v=202611120225",
+    "./js/draw.js": "./js/draw.js?v=202611120225",
+    "./js/game.js": "./js/game.js?v=202611120225",
+    "./js/input.js": "./js/input.js?v=202611120225",
+    "./js/levels.js": "./js/levels.js?v=202611120225",
+    "./js/lock.js": "./js/lock.js?v=202611120225",
+    "./js/locks.js": "./js/locks.js?v=202611120225",
+    "./js/main.js": "./js/main.js?v=202611120225",
+    "./js/scores.js": "./js/scores.js?v=202611120225",
+    "./js/share.js": "./js/share.js?v=202611120225",
+    "./js/sprites.js": "./js/sprites.js?v=202611120225"
   }
 }
   </script>
-  <script type="module" src="js/main.js?v=202611112010"></script>
+  <script type="module" src="js/main.js?v=202611120225"></script>
 </body>
 </html>
