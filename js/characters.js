@@ -396,6 +396,45 @@ export function drawEdna(ctx, p = {}) {
   D.arc(ctx, 1, hy + 4.5, 3, 2, 0.2, Math.PI - 0.2, 0.1);
 }
 
+
+// Blue Monday, reformed and playable: a walking calendar page
+export function drawMonday(ctx, p = {}) {
+  const st = p.state || 'idle', t = p.t || 0, ph = p.phase || 0;
+  const run = st === 'run', air = st === 'jump' || st === 'fall';
+  const bob = run ? -Math.abs(Math.sin(ph)) * 2 : st === 'idle' ? Math.sin(t * 2.2) * 0.6 : 0;
+  D.pen(ctx);
+  const sw = run ? Math.sin(ph) * 6 : air ? 3 : 0;
+  D.line(ctx, -6, -12 + bob, -6 - sw, -4);
+  D.line(ctx, 6, -12 + bob, 6 + sw, -4);
+  D.ellipse(ctx, -5 - sw, -3, 5.5, 3, { fill: INK, amt: 0.2 });
+  D.ellipse(ctx, 7 + sw, -3, 5.5, 3, { fill: INK, amt: 0.2 });
+  // arms
+  D.line(ctx, -15, -32 + bob, -21, run ? -22 + Math.sin(ph) * 3 : -22 + bob, 0.4);
+  if (p.throwing) {
+    D.line(ctx, 15, -32 + bob, 23, -42 + bob, 0.4);
+    D.rect(ctx, 20, -54 + bob, 10, 13, { fill: true, amt: 0.3 });
+    D.text(ctx, 'DUE', 25, -48 + bob, 4.5, { color: D.RED });
+  } else {
+    D.line(ctx, 15, -32 + bob, 21, air ? -40 : -22 + bob, 0.4);
+  }
+  // the calendar page
+  D.rect(ctx, -15, -52 + bob, 30, 41, { fill: true });
+  D.rect(ctx, -15, -52 + bob, 30, 9, { fill: 'rgba(43,72,150,0.9)', amt: 0.3 });
+  D.text(ctx, 'MON', 0, -47.5 + bob, 6.5, { color: '#fff', sc: true });
+  for (const x of [-9, 0, 9]) D.circle(ctx, x, -52 + bob, 1.6, { fill: true, amt: 0.1 });
+  // a face that's still a bit grumpy, but trying
+  D.line(ctx, -9, -40 + bob, -3, -38.5 + bob, 0.2);
+  D.line(ctx, 9, -40 + bob, 3, -38.5 + bob, 0.2);
+  D.dot(ctx, -6, -36 + bob, 1.4);
+  D.dot(ctx, 6, -36 + bob, 1.4);
+  D.line(ctx, -3, -32.5 + bob, 3, -33 + bob, 0.2);
+  D.text(ctx, '18', 0, -23 + bob, 11);
+  D.text(ctx, 'JAN', 0, -14.5 + bob, 4.5);
+  // party hat: he's on our side now
+  D.poly(ctx, [[2, -52 + bob], [10, -53 + bob], [8, -63 + bob]], { fill: 'rgba(241,200,75,0.6)', amt: 0.2 });
+  D.dot(ctx, 8, -64 + bob, 1.8);
+}
+
 export const CHARACTERS = {
   tim: {
     id: 'tim',
@@ -498,10 +537,39 @@ export const CHARACTERS = {
     speed: 235, accel: 2100, friction: 2400, airControl: 0.8,
     abilities: { stamp: true, airJumps: { count: 1, vy: 720, kind: 'bounce', boost: 1.35 } },
   },
+  // Unlocked by finishing the game as 3 different characters, not by a passcode,
+  // so his card details are public
+  monday: {
+    id: 'monday', number: '#018', name: 'Blue Monday', first: 'Blue Monday',
+    unlockedBy: 'completions', completionsNeeded: 3,
+    cardTone: 'white', draw: drawMonday,
+    hints: {
+      special: 'Press X (or ★) to toss a deadline. Press jump again in mid-air for a Leap Day!',
+      wall: 'A gloom wall! Three tax forms will crack it.',
+      gap: 'Too far to jump. Jump, then press jump again to Leap Day across.',
+    },
+    speed: 245, accel: 2100, friction: 2300, airControl: 0.8,
+    abilities: { projectile: 'paper', airJumps: { count: 1, vy: 640, kind: 'leap', boost: 1.4 } },
+    card: {
+      stats: [
+        ['Name', 'Blue Monday'],
+        ['Date', 'Monday 18 January 2027'],
+        ['Former occupation', 'Most miserable day of the year'],
+        ['Likes', 'Drizzle, deadlines, the 07:52 being delayed'],
+        ['Dislikes', 'Weekends'],
+        ['Reason for changing sides', 'Beaten by three different Christmas card characters, and frankly impressed'],
+      ],
+      ability: 'Deadline Toss & Leap Day',
+      abilityHow: 'Your special (X, a tap, or the ★ button) lobs a tax form that sends minions packing; three crack a gloom wall. Press jump again in mid-air for a Leap Day: an extra-long leap that only comes round once per jump.',
+      secret: 'Friday off',
+      secrets: 'Fridays off',
+      victory: 'Blue Monday has saved the Seasonal Spirit. Nobody saw that coming, least of all Blue Monday.',
+    },
+  },
 };
 
 // in card-number order
-export const ORDER = ['tim', 'clive', 'rinky', 'rex', 'satsuma', 'watson', 'edna'];
+export const ORDER = ['tim', 'clive', 'rinky', 'rex', 'satsuma', 'watson', 'edna', 'monday'];
 
 // Junie the puppy, for the finale
 export function drawJunie(ctx, t = 0) {

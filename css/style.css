@@ -345,3 +345,26 @@ body.playing, body.playing #app { touch-action: none; }
 :root[data-theme="dark"] .subtitle::before, :root[data-theme="dark"] .subtitle::after { color: #f1c84b; }
 /* the character cards keep their real card colours and blue biro in both themes */
 .card-paper, .char-tile { --ink: #1d4fb8; --red: #c8323c; color: var(--ink); }
+
+/* ---------- Awards ---------- */
+.award-tree { width: min(560px, 100%); height: auto; aspect-ratio: 560 / 400; display: block; margin: 0 auto 12px; }
+.award-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; text-align: left; margin-bottom: 14px; }
+.award { display: flex; gap: 10px; align-items: center; padding: 6px 10px; border: 2px dashed var(--ink-soft); border-radius: var(--wobble2); opacity: 0.6; }
+.award.got { opacity: 1; border-style: solid; border-color: var(--ink); }
+.award canvas { width: 44px; height: 53px; flex: none; }
+.award b { font-size: 1.2rem; }
+.award p { margin: 0; font-size: 1rem; line-height: 1.2; }
+.award small { opacity: 0.75; }
+.award-toast {
+  position: absolute; top: max(12px, env(safe-area-inset-top)); left: 50%; z-index: 40;
+  display: flex; align-items: center; gap: 10px; padding: 6px 16px 6px 8px;
+  transform: translate(-50%, -140%); transition: transform 0.35s ease; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+.award-toast.show { transform: translate(-50%, 0); }
+.award-toast canvas { width: 40px; height: 48px; }
+.award-toast small { display: block; font-size: 0.95rem; opacity: 0.8; }
+.award-toast b { font-size: 1.3rem; }
+.stats-table tr.bonus-row td { color: #b8860b; font-weight: bold; }
+:root[data-theme="dark"] .stats-table tr.bonus-row td { color: #f1c84b; }
+.char-tile.special { border-style: dashed; }

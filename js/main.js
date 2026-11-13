@@ -12,6 +12,7 @@ import * as Theme from './theme.js';
 import * as S from './sprites.js';
 import { submitScore, topScores, isShared } from './scores.js';
 import { shareImage, whatsappLink } from './share.js';
+import { AWARDS, blankFacts, recordResult, checkAwards } from './awards.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -23,9 +24,19 @@ const SAVE_KEY = 'ccc:save:v1';
 function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
-    if (s && typeof s === 'object') return { unlocked: {}, progress: {}, name: '', muted: false, seenStory: {}, controls: 'swipe', theme: 'auto', ...s };
+    if (s && typeof s === 'object') {
+      const out = { ...defaults(), ...s };
+      out.facts = { ...blankFacts(), ...(s.facts || {}) };
+      return out;
+    }
   } catch { /* no save yet */ }
-  return { unlocked: {}, progress: {}, name: '', muted: false, seenStory: {}, controls: 'swipe', theme: 'auto' };
+  return defaults();
+}
+function defaults() {
+  return {
+    unlocked: {}, progress: {}, name: '', muted: false, seenStory: {}, controls: 'swipe', theme: 'auto',
+    music: 'festive', awards: {}, facts: blankFacts(),
+  };
 }
 let save = loadSave();
 function persist() {
@@ -38,6 +49,11 @@ function prog(id) {
 
 const cards = {};
 for (const id of ORDER) {
+  const ch = CHARACTERS[id];
+  if (ch.unlockedBy) {
+    if (save.unlocked[id]) cards[id] = ch.card;
+    continue;
+  }
   const key = save.unlocked[id];
   if (!key || !LOCKS[id]) continue;
   const card = decrypt(id, key, LOCKS[id].data);
@@ -163,6 +179,43 @@ function paintCanvas(c, t) {
     return;
   }
 
+  if (c.dataset.bauble !== undefined) {
+    ctx.save();
+    ctx.translate(lw / 2, lh / 2 + 6);
+    ctx.scale(lw / 50, lw / 50);
+    S.drawBauble(ctx, +c.dataset.bauble, c.dataset.earned === '1', t);
+    ctx.restore();
+    return;
+  }
+
+  if (scene === 'awards') {
+    // a big tree hung with every bauble earned so far
+    D.pen(ctx, D.INK, 2.6);
+    const tiers = [[90, 360, 470], [130, 270, 430], [175, 185, 385]];
+    for (const [l, y, r] of tiers) D.poly(ctx, [[l, y], [280, y - 130], [r, y]], { fill: 'rgba(76,175,106,0.25)' });
+    D.rect(ctx, 262, 360, 36, 26, { fill: true });
+    D.star(ctx, 280, 52, 20, { fill: 'rgba(241,200,75,0.8)', rot: Math.sin(t) * 0.1 });
+    // rows of hooks that sit inside each tier of the tree (7 + 5 + 5 + 3 = 20)
+    const slots = [];
+    const rows = [[0, 25, 7], [0, 65, 5], [1, 25, 5], [2, 30, 3]];
+    for (const [tier, up, count] of rows) {
+      const [l, base, r] = tiers[tier];
+      const y = base - up;
+      const width = (r - l) * ((130 - up) / 130) * 0.8;
+      for (let i = 0; i < count; i++) slots.push([280 - width / 2 + (width * (i + 0.5)) / count, y]);
+    }
+    AWARDS.forEach((a, i) => {
+      const [x, y] = slots[i % slots.length];
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(0.62, 0.62);
+      if (save.awards[a.id]) S.drawBauble(ctx, i, true, t);
+      else { ctx.globalAlpha = 0.35; S.drawBauble(ctx, i, false, t); }
+      ctx.restore();
+    });
+    return;
+  }
+
   if (scene === 'title') {
     // card-style starburst
     D.pen(ctx, D.INK, 2);
@@ -171,15 +224,19 @@ function paintCanvas(c, t) {
       D.line(ctx, 280 + Math.cos(a) * 120, 230 + Math.sin(a) * 120, 280 + Math.cos(a) * 175, 230 + Math.sin(a) * 175, 1.2);
     }
     for (const [x, y] of [[60, 60], [500, 50], [120, 150], [440, 140]]) D.star(ctx, x, y, 10, { fill: 'rgba(241,200,75,0.7)' });
+    const n = ORDER.length;
+    const gap = 470 / n;
+    const sc = Math.min(2, gap / 34);
     ORDER.forEach((id, i) => {
-      const x = 200 + i * 160;
+      const x = 45 + gap * (i + 0.5);
       if (cards[id]) {
         const hop = Math.max(0, Math.sin(t * 3 + i * 1.7)) * 10;
-        drawCharAt(ctx, id, x, 205 - hop, 2, { state: hop > 2 ? 'jump' : 'idle', t: t + i });
+        drawCharAt(ctx, id, x, 205 - hop, sc, { state: hop > 2 ? 'jump' : 'idle', t: t + i });
       } else {
+        const w = 50 * sc, h = 85 * sc;
         ctx.save();
-        ctx.translate(x - 50, 40);
-        drawMystery(ctx, 100, 170);
+        ctx.translate(x - w / 2, 205 - h);
+        drawMystery(ctx, w, h);
         ctx.restore();
       }
     });
@@ -246,6 +303,83 @@ function updateMuteLabels() {
   const label = `Sound: ${save.muted ? 'off' : 'on'}`;
   $('#muteBtn').textContent = label;
   $('#pauseMute').textContent = label;
+  const music = `Music: ${save.music === 'acid' ? 'Avant Garde Acid Jazz' : 'Festive'}`;
+  $('#musicBtn').textContent = music;
+  $('#pauseMusic').textContent = music;
+}
+function toggleMusic() {
+  save.music = save.music === 'acid' ? 'festive' : 'acid';
+  A.setMusicStyle(save.music);
+  persist();
+  updateMuteLabels();
+}
+$('#musicBtn').addEventListener('click', toggleMusic);
+$('#pauseMusic').addEventListener('click', toggleMusic);
+
+// ---------- Awards (baubles) ----------
+// Characters (other than Blue Monday) who have finished the game
+function completions() {
+  return ORDER.filter((id) => !CHARACTERS[id].unlockedBy && save.progress[id]?.done).length;
+}
+function maybeUnlockMonday() {
+  const m = CHARACTERS.monday;
+  if (save.unlocked.monday || completions() < m.completionsNeeded) return false;
+  save.unlocked.monday = 'earned';
+  cards.monday = m.card;
+  return true;
+}
+function refreshFacts() {
+  save.facts.allCards = ORDER.every((id) => CHARACTERS[id].unlockedBy || cards[id]);
+  save.facts.mondayUnlocked = !!save.unlocked.monday;
+}
+const toastQueue = [];
+let toastBusy = false;
+function awardCheck() {
+  for (const a of checkAwards(save.facts, save.awards)) {
+    toastQueue.push({ text: a.name, bauble: AWARDS.indexOf(a) });
+  }
+  pumpToasts();
+  updateAwardsLabel();
+}
+function showToastMessage(text) {
+  toastQueue.push({ text, bauble: null });
+  pumpToasts();
+}
+function pumpToasts() {
+  if (toastBusy || !toastQueue.length) return;
+  toastBusy = true;
+  const item = toastQueue.shift();
+  const el = $('#awardToast');
+  el.querySelector('small').textContent = item.bauble === null ? 'News!' : 'New bauble!';
+  el.querySelector('b').textContent = item.text;
+  const cv = el.querySelector('canvas');
+  cv.hidden = item.bauble === null;
+  el.hidden = false; // show first: a hidden canvas has no size to paint at
+  if (item.bauble !== null) { cv.dataset.bauble = item.bauble; cv.dataset.earned = '1'; paintCanvas(cv, performance.now() / 1000); }
+  if (item.bauble !== null) A.sfx.secret();
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => { el.hidden = true; toastBusy = false; pumpToasts(); }, 400);
+  }, 3000);
+}
+function updateAwardsLabel() {
+  const n = AWARDS.filter((a) => save.awards[a.id]).length;
+  $('#awardsBtn').textContent = `Baubles (${n}/${AWARDS.length})`;
+}
+function openAwards() {
+  const n = AWARDS.filter((a) => save.awards[a.id]).length;
+  $('#awardsCount').textContent = `${n} of ${AWARDS.length} baubles on the tree.`;
+  $('#awardList').innerHTML = AWARDS.map((a, i) => {
+    const got = save.awards[a.id];
+    const when = got ? new Date(got).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+    return `<div class="award ${got ? 'got' : ''}">
+      <canvas class="portrait sized" width="50" height="60" data-bauble="${i}" data-earned="${got ? 1 : 0}"></canvas>
+      <div><b>${esc(a.name)}</b><p>${esc(a.desc)}</p>${got ? `<small>Earned ${esc(when)}</small>` : ''}</div>
+    </div>`;
+  }).join('');
+  show('awards');
+  paintVisible();
 }
 // ---------- Theme ----------
 // 'auto' follows the phone or computer's dark-mode setting
@@ -283,15 +417,20 @@ function openSelect() {
     const ch = CHARACTERS[id];
     const unlocked = !!cards[id];
     const btn = document.createElement('button');
-    btn.className = `char-tile sketch ${ch.cardTone}`;
+    btn.className = `char-tile sketch ${ch.cardTone}${ch.unlockedBy ? ' special' : ''}`;
+    let state = unlocked ? 'Unlocked: tap to see the card' : 'Locked: tap to unlock';
+    if (!unlocked && ch.unlockedBy) {
+      state = `Finish the game as ${ch.completionsNeeded} different characters to unlock (${completions()}/${ch.completionsNeeded})`;
+    }
     btn.innerHTML = `
       <canvas class="portrait" width="150" height="150" data-tone="${ch.cardTone}" ${unlocked ? `data-char="${id}"` : 'data-locked="1"'}></canvas>
       <span class="num">${esc(ch.number)}</span>
-      <div class="name">${esc(ch.name)}</div>
-      <div class="state">${unlocked ? 'Unlocked: tap to see the card' : 'Locked: tap to unlock'}</div>`;
+      <div class="name">${esc(unlocked || !ch.unlockedBy ? ch.name : '???')}</div>
+      <div class="state">${state}</div>`;
     btn.addEventListener('click', () => {
-      A.sfx.click();
-      if (unlocked) openCard(id); else openUnlock(id);
+      if (unlocked) { A.sfx.click(); openCard(id); }
+      else if (ch.unlockedBy) A.sfx.wrong();
+      else { A.sfx.click(); openUnlock(id); }
     });
     list.appendChild(btn);
   }
@@ -329,6 +468,8 @@ $('#unlockForm').addEventListener('submit', (e) => {
   if (res) {
     cards[id] = res.card;
     save.unlocked[id] = res.key;
+    refreshFacts();
+    awardCheck();
     persist();
     A.sfx.unlock();
     msg.textContent = `Correct! ${CHARACTERS[id].first} is unlocked.`;
@@ -545,6 +686,15 @@ function onComplete(result) {
     p.reached = Math.max(p.reached, Math.min(LEVELS.length - 1, result.level + 1));
     if (result.level === LEVELS.length - 1) p.done = true;
   }
+  // awards
+  recordResult(save.facts, result, {
+    charId: current, dark: Theme.isDark(), acid: A.getMusicStyle() === 'acid', runDone,
+    seasonSaved: !result.bonus && result.level === LEVELS.length - 1,
+  });
+  const mondayNews = maybeUnlockMonday();
+  refreshFacts();
+  awardCheck();
+  if (mondayNews) setTimeout(() => showToastMessage('Blue Monday has changed sides! Find him on the character screen.'), 400);
   persist();
   lastResult = result;
   engine.setPaused(true);
@@ -586,7 +736,9 @@ function onComplete(result) {
     <tr><td>Minions cheered up</td><td>${result.enemies}</td><td>${result.enemies * 20}</td></tr>
     <tr><td>Time</td><td>${mins}:${secs}</td><td>${result.timeBonus}</td></tr>
     <tr><td>Tree lit</td><td></td><td>500</td></tr>
+    ${result.boss ? '<tr><td>Boss beaten</td><td></td><td>1000</td></tr>' : ''}
     <tr><td>Tumbles</td><td>${result.deaths}</td><td>${result.deaths ? -result.deaths * 50 : 0}</td></tr>
+    ${result.allStars ? `<tr class="bonus-row"><td>★ Every star! Bonus</td><td>+20%</td><td>${result.starBonus.toLocaleString('en-GB')}</td></tr>` : ''}
     <tr class="total"><td>Score</td><td></td><td>${result.score.toLocaleString('en-GB')}</td></tr>`;
   const unlocked = !bonusWasOpen && bonusOpen(current) ? ` Bonus level unlocked: ${BONUS_NAME}!` : '';
   $('#completeBest').textContent = [bestText, runNote, unlocked.trim()].filter(Boolean).join(' ');
@@ -633,6 +785,9 @@ $('#scoreForm').addEventListener('submit', async (e) => {
   run.submitted = true;
   persist();
   const { shared } = await submitScore({ name, character: CHARACTERS[current].name, score: run.total });
+  save.facts.board = true;
+  awardCheck();
+  persist();
   $('#scoreForm').hidden = true;
   $('#scoreMsg').textContent = shared
     ? 'Added to the shared high scores!'
@@ -669,6 +824,7 @@ document.querySelectorAll('[data-go]').forEach((b) => {
     else if (go === 'select') openSelect();
     else if (go === 'howto') show('howto');
     else if (go === 'scores') openScores();
+    else if (go === 'awards') openAwards();
   });
 });
 $('#muteBtn').addEventListener('click', toggleMute);
@@ -712,6 +868,7 @@ window.addEventListener('orientationchange', () => setTimeout(resize, 200));
 function wakeAudio() {
   A.initAudio();
   A.setMuted(save.muted);
+  A.setMusicStyle(save.music);
   if (!engine.running) A.playMusic($('#s-finale').classList.contains('active') ? 'wish' : 'jingle');
 }
 window.addEventListener('pointerdown', wakeAudio, { once: true });
@@ -723,6 +880,12 @@ initTouchSafety();
 updateMuteLabels();
 updateControlsLabel();
 applyTheme();
+// catch up awards and Blue Monday for saves from before they existed
+if (maybeUnlockMonday()) setTimeout(() => showToastMessage('Blue Monday has changed sides! Find him on the character screen.'), 800);
+refreshFacts();
+updateAwardsLabel();
+setTimeout(awardCheck, 600);
+persist();
 resize();
 openTitle();
 const fontsReady = document.fonts?.ready || Promise.resolve();

@@ -97,8 +97,9 @@ The public key is designed to be seen by anyone. Row level security limits it to
 | `js/sprites.js` | January's minions, pickups, scenery and backgrounds |
 | `js/draw.js` | Wobbly biro drawing helpers |
 | `js/theme.js` | Light and dark themes: translates colours as they're drawn |
-| `js/audio.js` | Sound effects and carols (all public domain) |
+| `js/audio.js` | Sound effects, carols (all public domain) and the generated Avant Garde Acid Jazz |
 | `js/lock.js`, `js/locks.js` | Passcode checking and the encrypted cards |
+| `js/awards.js` | Baubles: the awards and the rules for earning them |
 | `js/scores.js`, `js/config.js` | High scores |
 | `js/share.js` | The shareable "I saved Christmas" picture |
 | `tools/check-levels.mjs` | Checks every level can be finished by every character, using the game's own physics |

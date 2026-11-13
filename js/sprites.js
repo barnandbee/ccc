@@ -328,6 +328,13 @@ function drawTreasure(ctx, kind, t) {
     D.circle(ctx, 0, 0, 11, { fill: 'rgba(245,150,40,0.85)' });
     D.ellipse(ctx, 4, -12, 5, 2.5, { rot: -0.4, fill: 'rgba(76,175,106,0.7)', amt: 0.2 });
     D.dot(ctx, -3, -3, 1, '#fff');
+  } else if (kind === 'monday') {
+    // a Friday off
+    D.rect(ctx, -12, -14, 24, 28, { fill: true, amt: 0.4 });
+    D.rect(ctx, -12, -14, 24, 8, { fill: 'rgba(200,50,60,0.75)', amt: 0.3 });
+    D.text(ctx, 'FRI', 0, -10, 6, { color: '#fff', sc: true });
+    D.text(ctx, 'day', 0, 0, 7);
+    D.text(ctx, 'off!', 0, 8, 7);
   } else if (kind === 'edna') {
     // an extreme garage cassette
     D.rect(ctx, -15, -10, 30, 20, { fill: true, amt: 0.4 });
@@ -336,6 +343,28 @@ function drawTreasure(ctx, kind, t) {
     D.circle(ctx, -6, 4, 3, { amt: 0.2 });
     D.circle(ctx, 6, 4, 3, { amt: 0.2 });
   }
+}
+
+// A Christmas bauble for the awards screen. Earned ones are coloured.
+const BAUBLE_COLOURS = ['rgba(200,50,60,0.75)', 'rgba(241,200,75,0.8)', 'rgba(59,154,217,0.7)', 'rgba(76,175,106,0.7)', 'rgba(224,122,208,0.7)', 'rgba(150,100,210,0.7)', 'rgba(245,150,40,0.8)'];
+export function drawBauble(ctx, i, earned, t = 0) {
+  ctx.save();
+  if (earned) ctx.rotate(Math.sin(t * 1.5 + i) * 0.06);
+  D.pen(ctx, earned ? INK : 'rgba(90,100,121,0.55)', 2.2);
+  D.line(ctx, 0, -30, 0, -22, 0.2);
+  D.rect(ctx, -6, -22, 12, 6, { fill: earned ? 'rgba(241,200,75,0.8)' : true, amt: 0.2 });
+  D.circle(ctx, 0, 0, 17, { fill: earned ? BAUBLE_COLOURS[i % BAUBLE_COLOURS.length] : true });
+  const kind = i % 3;
+  if (kind === 0) D.zigzag(ctx, -15, 0, 15, 0, 4, 6);
+  else if (kind === 1) { for (const [x, y] of [[-7, -5], [5, -8], [8, 4], [-4, 7], [0, -1]]) D.dot(ctx, x, y, 2, earned ? '#fff' : 'rgba(90,100,121,0.5)'); }
+  else { D.line(ctx, -16, -4, 16, -4, 0.3); D.line(ctx, -16, 4, 16, 4, 0.3); }
+  if (earned) {
+    D.pen(ctx, '#fff', 2);
+    D.arc(ctx, -6, -6, 6, 6, Math.PI * 1.05, Math.PI * 1.45, 0.2);
+  } else {
+    D.text(ctx, '?', 0, 1, 16, { color: 'rgba(90,100,121,0.7)' });
+  }
+  ctx.restore();
 }
 
 // Clive-Bot's magnetic pulse

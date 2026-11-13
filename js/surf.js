@@ -176,7 +176,7 @@ export class Surf {
     if (sp) {
       // projectiles: prawns arc, magnet pulses and harp blasts fly straight
       if (ab.projectile && p.throwCD <= 0 && this.snacks.length < 3) {
-        const arc = ab.projectile === 'snack';
+        const arc = ab.projectile === 'snack' || ab.projectile === 'paper';
         this.snacks.push({ type: ab.projectile, x: PX + 14, y: p.y - (arc ? 46 : 30), vx: arc ? 620 : 680, vy: arc ? -220 : 0, rot: 0, life: 1.4, age: 0, arc });
         p.throwCD = ab.projectile === 'harp' ? 0.45 : 0.3;
         p.throwAnim = 0.2;
@@ -402,6 +402,7 @@ export class Surf {
       ctx.save();
       ctx.translate(s.x, s.y);
       if (s.type === 'pulse') S.drawPulse(ctx, s.age, 1);
+      else if (s.type === 'paper') S.drawPaperMissile(ctx, s.rot);
       else if (s.type === 'harp') S.drawHarpWave(ctx, s.age, 1);
       else S.drawSnack(ctx, s.rot, 0.8);
       ctx.restore();

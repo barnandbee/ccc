@@ -54,6 +54,13 @@ Difficulty starts gentle and rises to moderate.
 
 Early levels have generous checkpoints and respawning. Later levels add trickier jumps and tougher enemies.
 
+## Extras added later
+
+- **All-stars bonus**: collect every star in a level for +20% on that level's score.
+- **Baubles**: 20 awards for feats (first level, full run, every star, no hits, both bosses, surfing distances, playing as several characters and more), shown on a tree on the Baubles screen.
+- **Music**: Festive carols or generated Avant Garde Acid Jazz (walking bass, swung ride, acid line, odd time signatures).
+- **Blue Monday** (#018) becomes playable after finishing the game as 3 different characters: Deadline Toss (lobbed tax forms) and Leap Day (a long mid-air leap).
+
 ## Collectibles
 
 - **Sparks of Seasonal Spirit**: biro stars, the main collectible.

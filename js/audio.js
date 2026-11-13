@@ -144,8 +144,12 @@ const SONGS = {
   },
 };
 
+SONGS.gym = { ...SONGS.deck, bpm: 172 };
+
 function schedule() {
-  if (!ac || !song) return;
+  if (!ac) return;
+  if (jazz) { scheduleJazz(); return; }
+  if (!song) return;
   const spb = 60 / song.bpm;
   while (nextTime < ac.currentTime + 0.25) {
     const [m, beats] = song.notes[noteIdx];
@@ -166,15 +170,175 @@ function schedule() {
   }
 }
 
+// ---------- Avant Garde Acid Jazz ----------
+// Generated live: walking upright bass, swung ride cymbal, jazzy comping,
+// a squelchy acid bassline and the occasional unsettling flourish.
+// Each song gets its own key, tempo and time signature (pulses = eighth notes per bar).
+const JAZZ = {
+  deck: { bpm: 132, root: 38, pulses: 8, swing: true },    // D, 4/4
+  jingle: { bpm: 150, root: 41, pulses: 8, swing: true },  // F, 4/4
+  gym: { bpm: 176, root: 43, pulses: 7, swing: false },    // G, 7/8
+  godrest: { bpm: 116, root: 33, pulses: 10, swing: true }, // A, 5/4
+  wish: { bpm: 104, root: 36, pulses: 6, swing: true },    // C, 3/4 waltz
+};
+// a minor-ish modal cycle: i-7, iv-7, bVII7, V7(#9)
+const CHORDS = [[0, [0, 3, 7, 10]], [5, [0, 3, 7, 10]], [10, [0, 4, 7, 10]], [7, [0, 4, 10, 15]]];
+const ACID_SCALE = [0, 3, 5, 6, 7, 10, 12, 15];
+
+let style = 'festive';
+let currentName = null;
+let jazz = null;
+
+function voice(f, t, dur, { type = 'sine', vol = 0.1, attack = 0.005, filter = null, vib = 0 } = {}) {
+  const o = ac.createOscillator();
+  const g = ac.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(f, t);
+  if (vib) {
+    const lfo = ac.createOscillator();
+    const lg = ac.createGain();
+    lfo.frequency.value = 6;
+    lg.gain.value = vib;
+    lfo.connect(lg).connect(o.frequency);
+    lfo.start(t);
+    lfo.stop(t + dur + 0.05);
+  }
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + attack);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  let node = o;
+  if (filter) {
+    const bq = ac.createBiquadFilter();
+    bq.type = filter.type || 'lowpass';
+    bq.Q.value = filter.q || 1;
+    bq.frequency.setValueAtTime(filter.from, t);
+    if (filter.to) bq.frequency.exponentialRampToValueAtTime(filter.to, t + (filter.time || dur));
+    node = o.connect(bq);
+  }
+  node.connect(g).connect(musicBus);
+  o.start(t);
+  o.stop(t + dur + 0.05);
+  return o;
+}
+function hat(t, dur, vol, freq) {
+  noise(dur, { vol, freq, q: 4, at: t - ac.currentTime, bus: musicBus });
+}
+
+function newAcidPattern() {
+  const pat = [];
+  for (let i = 0; i < 16; i++) {
+    const on = Math.random() < (i % 4 === 0 ? 0.85 : 0.55);
+    pat.push(on ? {
+      n: ACID_SCALE[Math.floor(Math.random() * ACID_SCALE.length)] + (Math.random() < 0.2 ? 12 : 0),
+      accent: Math.random() < 0.3,
+    } : null);
+  }
+  return pat;
+}
+
+function jazzPulse(t) {
+  const c = jazz.cfg;
+  const pulseDur = 30 / c.bpm;
+  const { pulse, bar } = jazz;
+  const [deg, tones] = CHORDS[bar % CHORDS.length];
+  const root = c.root + deg;
+  const beat = pulse % 2 === 0;
+
+  // ride cymbal: ding on the beat, a skip before beats 2 and 4
+  if (beat) hat(t, 0.25, 0.05, 6800);
+  if (c.swing && pulse % 4 === 3) hat(t, 0.12, 0.035, 7200);
+  if (pulse % 4 === 2) hat(t, 0.04, 0.03, 3000); // hi-hat foot
+
+  // walking bass on every beat, approaching the next chord chromatically
+  if (beat) {
+    let n;
+    const lastBeat = pulse + 2 >= c.pulses;
+    if (pulse === 0) n = root;
+    else if (lastBeat) {
+      const nextRoot = c.root + CHORDS[(bar + 1) % CHORDS.length][0];
+      n = nextRoot + (Math.random() < 0.5 ? -1 : 1);
+    } else n = root + tones[1 + Math.floor(Math.random() * 3)] - (Math.random() < 0.3 ? 12 : 0);
+    while (n < c.root - 5) n += 12;
+    voice(freq(n), t, pulseDur * 1.9, { type: 'triangle', vol: 0.2, filter: { from: 900, to: 300, q: 2 } });
+  }
+
+  // comping: Rhodes-ish chords, mostly off the beat
+  if (Math.random() < (beat ? 0.12 : 0.35)) {
+    for (const iv of [tones[1], tones[3], tones[0] + 14, tones[2] + 9]) {
+      voice(freq(root + 24 + iv), t, pulseDur * 1.6, { type: 'sine', vol: 0.035, attack: 0.01, vib: 3 });
+    }
+  }
+
+  // the acid line: two sixteenths per pulse, silent every fourth bar
+  if (bar % 4 !== 3 && bar > 0) {
+    for (let k = 0; k < 2; k++) {
+      const st = jazz.acid[(pulse * 2 + k) % 16];
+      if (!st) continue;
+      const at = t + k * pulseDur / 2;
+      voice(freq(c.root + 12 + st.n), at, pulseDur * 0.55, {
+        type: 'sawtooth', vol: st.accent ? 0.075 : 0.045,
+        filter: { type: 'lowpass', from: st.accent ? 2800 : 1400, to: 180, q: 16, time: pulseDur * 0.5 },
+      });
+    }
+  }
+
+  // avant garde: now and then a cluster chord or a squealing sax
+  if (pulse === 0 && bar > 0 && bar % 6 === 5) {
+    if (Math.random() < 0.5) {
+      for (const iv of [0, 1, 2, 6]) voice(freq(root + 36 + iv), t, pulseDur * 6, { type: 'triangle', vol: 0.03, attack: 0.3, vib: 5 });
+    } else {
+      const o = voice(freq(root + 31), t, pulseDur * 4, { type: 'square', vol: 0.03, attack: 0.05, vib: 14, filter: { type: 'bandpass', from: 1500, q: 3 } });
+      o.frequency.exponentialRampToValueAtTime(freq(root + 50), t + pulseDur * 3.5);
+    }
+  }
+
+  jazz.pulse++;
+  if (jazz.pulse >= c.pulses) {
+    jazz.pulse = 0;
+    jazz.bar++;
+    if (jazz.bar % 4 === 0) jazz.acid = newAcidPattern();
+  }
+}
+
+function scheduleJazz() {
+  const c = jazz.cfg;
+  const pulseDur = 30 / c.bpm;
+  while (jazz.next < ac.currentTime + 0.25) {
+    const swingOffset = c.swing && jazz.pulse % 2 === 1 ? pulseDur * 0.28 : 0;
+    jazzPulse(jazz.next + swingOffset);
+    jazz.next += pulseDur;
+  }
+}
+
+export function setMusicStyle(s) {
+  if (s === style) return;
+  style = s;
+  const name = currentName;
+  song = null;
+  jazz = null;
+  currentName = null;
+  if (name) playMusic(name);
+}
+export function getMusicStyle() { return style; }
+
 export function playMusic(name) {
   if (!ac) return;
-  if (song === SONGS[name]) return;
-  song = SONGS[name] || null;
-  noteIdx = 0;
-  nextTime = ac.currentTime + 0.1;
+  if (currentName === name && (song || jazz)) return;
+  currentName = name;
+  if (style === 'acid') {
+    song = null;
+    jazz = { cfg: JAZZ[name] || JAZZ.deck, pulse: 0, bar: 0, next: ac.currentTime + 0.1, acid: newAcidPattern() };
+  } else {
+    jazz = null;
+    song = SONGS[name] || null;
+    noteIdx = 0;
+    nextTime = ac.currentTime + 0.1;
+  }
   if (!timer) timer = setInterval(schedule, 60);
 }
 
 export function stopMusic() {
   song = null;
+  jazz = null;
+  currentName = null;
 }

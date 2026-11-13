@@ -12,11 +12,12 @@ const GRAV = 2100, JUMP_V = 760, MAX_FALL = 950;
 const COYOTE = 0.1, BUFFER = 0.13;
 const SPRINT_V = 640, SPRINT_T = 0.38, SPRINT_CD = 0.85;
 const STEP = 1 / 120;
-export const LEVEL_MUSIC = ['deck', 'jingle', 'deck', 'godrest'];
+export const LEVEL_MUSIC = ['deck', 'jingle', 'gym', 'godrest'];
 
 // projectile kinds: Tim's prawns, Clive-Bot's magnet pulse, MacEagle's harp blast
 const PROJ = {
   snack: { cd: 0.28, life: 1.6, g: 1300, speed: 520, vy: -320, pierce: false, dmg: 1, r: 10 },
+  paper: { cd: 0.32, life: 1.6, g: 1300, speed: 500, vy: -360, pierce: false, dmg: 1, r: 12 }, // Blue Monday's deadline toss
   pulse: { cd: 0.3, life: 0.55, g: 0, speed: 640, vy: 0, pierce: false, dmg: 1, r: 12 },
   harp: { cd: 0.5, life: 1.0, g: 0, speed: 420, vy: 0, pierce: true, dmg: 2, r: 22 },
 };
@@ -134,7 +135,7 @@ export class Game {
     this.toasts = [];
     this.spawn = { x: L.start.x * T + T / 2, y: (L.start.y + 1) * T };
     this.player = this.makePlayer(this.spawn);
-    this.stats = { sparks: 0, secrets: 0, deaths: 0, total: this.sparks.length, enemies: 0 };
+    this.stats = { sparks: 0, secrets: 0, deaths: 0, hits: 0, total: this.sparks.length, enemies: 0 };
     this.cam = { x: clamp(this.spawn.x - VW / 3, 0, this.Wpx - VW) };
     this.state = 'play';
     this.endTimer = 0;
@@ -357,8 +358,8 @@ export class Game {
       if (proj && p.throwCD <= 0 && this.snacks.length < 3) {
         const d = PROJ[proj];
         this.snacks.push({
-          type: proj, x: p.x + p.w / 2 + p.facing * 10, y: proj === 'snack' ? p.y + 12 : p.y + p.h * 0.42,
-          vx: p.facing * d.speed + (proj === 'snack' ? p.vx * 0.3 : 0), vy: d.vy, rot: 0, dir: p.facing,
+          type: proj, x: p.x + p.w / 2 + p.facing * 10, y: d.g ? p.y + 12 : p.y + p.h * 0.42,
+          vx: p.facing * d.speed + (d.g ? p.vx * 0.3 : 0), vy: d.vy, rot: 0, dir: p.facing,
           life: d.life, age: 0, hitBoss: false,
         });
         p.throwCD = d.cd;
@@ -908,6 +909,7 @@ export class Game {
     const p = this.player;
     if (p.inv > 0 || smashing(p) || p.dead > 0 || this.state !== 'play') return;
     p.hp--;
+    this.stats.hits++;
     p.inv = 1.4;
     p.knock = 0.25;
     p.vy = -420;
@@ -923,6 +925,7 @@ export class Game {
     if (p.dead > 0) return;
     p.dead = 1.1;
     p.vy = -650;
+    if (p.hp > 0) this.stats.hits++;
     p.hp = 0;
     p.sprintT = 0;
     p.pounceT = 0;
@@ -957,11 +960,15 @@ export class Game {
     const s = this.stats;
     const time = this.clock;
     const timeBonus = Math.max(0, Math.round((this.L.par - time) * 5));
-    const score = Math.max(0,
+    const base = Math.max(0,
       s.sparks * 10 + s.secrets * 250 + 500 + timeBonus + s.enemies * 20 + (this.boss ? 1000 : 0) - s.deaths * 50);
+    // every star collected: +20% on the level score
+    const allStars = s.total > 0 && s.sparks >= s.total;
+    const starBonus = allStars ? Math.round(base * 0.2) : 0;
     return {
       level: this.levelIndex, sparks: s.sparks, total: s.total, secrets: s.secrets,
-      secretTotal: this.secrets.length, deaths: s.deaths, time, score, timeBonus, enemies: s.enemies,
+      secretTotal: this.secrets.length, deaths: s.deaths, hits: s.hits, time, timeBonus, enemies: s.enemies,
+      allStars, starBonus, base, score: base + starBonus, par: this.L.par, boss: this.boss?.type || null,
     };
   }
 
@@ -1136,6 +1143,7 @@ export class Game {
       ctx.save();
       ctx.translate(s.x, s.y);
       if (s.type === 'pulse') S.drawPulse(ctx, s.age, s.dir);
+      else if (s.type === 'paper') S.drawPaperMissile(ctx, s.rot);
       else if (s.type === 'harp') S.drawHarpWave(ctx, s.age, s.dir);
       else S.drawSnack(ctx, s.rot, 0.8);
       ctx.restore();
