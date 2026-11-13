@@ -2,7 +2,7 @@
 import * as D from './draw.js';
 import { themeContext, paperTone } from './theme.js';
 import * as S from './sprites.js';
-import { LEVELS, T, ROWS, TILE } from './levels.js';
+import { LEVELS, OFFICE, T, ROWS, TILE } from './levels.js';
 import { CHARACTERS } from './characters.js';
 import { sfx, playMusic } from './audio.js';
 import { input } from './input.js';
@@ -65,10 +65,11 @@ export class Game {
     if (this.running) this.render();
   }
 
-  start(levelIndex, charId, card) {
+  start(levelIndex, charId, card, opts = {}) {
     this.charId = charId;
     this.ch = CHARACTERS[charId];
     this.card = card;
+    this.officePrizeTaken = !!opts.officeDone;
     this.load(levelIndex);
     this.running = true;
     this.paused = false;
@@ -135,7 +136,7 @@ export class Game {
     this.toasts = [];
     this.spawn = { x: L.start.x * T + T / 2, y: (L.start.y + 1) * T };
     this.player = this.makePlayer(this.spawn);
-    this.stats = { sparks: 0, secrets: 0, deaths: 0, hits: 0, total: this.sparks.length, enemies: 0 };
+    this.stats = { sparks: 0, secrets: 0, deaths: 0, hits: 0, total: this.sparks.length, enemies: 0, officeStars: 0 };
     this.cam = { x: clamp(this.spawn.x - VW / 3, 0, this.Wpx - VW) };
     this.state = 'play';
     this.endTimer = 0;
@@ -143,6 +144,9 @@ export class Game {
     this.banner = 3;
     this.shake = 0;
     this.activeSign = null;
+    this.office = null;
+    this.stash = null;
+    this.doorPush = 0;
   }
 
   makePlayer(sp) {
@@ -298,6 +302,7 @@ export class Game {
     }
     this.updateEnemies(dt);
     this.updateSnacks(dt);
+    if (this.office) this.updateOffice(dt);
     for (const st of this.stamps) {
       st.life -= dt;
       if (st.life > 0.1) this.applyStamp(st);
@@ -353,6 +358,7 @@ export class Game {
       p.pouncedAir = false;
     }
 
+    if (sp && this.office && this.officeInteract()) sp = false;
     if (sp) {
       const proj = ab.projectile;
       if (proj && p.throwCD <= 0 && this.snacks.length < 3) {
@@ -473,6 +479,18 @@ export class Game {
 
     if (p.y > VH + 60) { this.kill(); return; }
 
+    // Walk into the far end of level 1 (having jumped the tree) to find a secret room;
+    // walk into the office's left wall to go back.
+    const pushingOut = this.office
+      ? input.left && p.x <= T + 1 && p.onGround
+      : this.L.secretDoor && input.right && p.x + p.w >= this.Wpx - 1 && p.onGround;
+    this.doorPush = pushingOut ? this.doorPush + dt : 0;
+    if (this.doorPush > 0.45) {
+      this.doorPush = 0;
+      if (this.office) this.exitOffice(); else this.enterOffice();
+      return;
+    }
+
     // spikes
     const l = Math.floor(p.x / T), r = Math.floor((p.x + p.w) / T);
     const top = Math.floor(p.y / T), bot = Math.floor((p.y + p.h) / T);
@@ -540,7 +558,8 @@ export class Game {
 
     // exit
     const e = this.exit;
-    if (e.visible && e.drop === 0 && !e.lit && Math.abs(pcx - e.x) < 40 && p.y + p.h > e.y - 150) {
+    // touching the trunk or lower branches lights the tree; a good running jump clears it
+    if (e.visible && e.drop === 0 && !e.lit && Math.abs(pcx - e.x) < 28 && p.y + p.h > e.y - 70) {
       e.lit = true;
       this.state = 'win';
       this.endTimer = 2.6;
@@ -835,6 +854,150 @@ export class Game {
     this.burst(b.x + b.w / 2, b.y, 3, 'heart');
   }
 
+  // ---------- Ebenezer Scroop's Office (secret room) ----------
+  enterOffice() {
+    const keep = ['L', 'cols', 'tiles', 'Wpx', 'sparks', 'secrets', 'cps', 'signs', 'walls', 'movers', 'enemies', 'exit', 'boss', 'gateClosed', 'spawn'];
+    this.stash = Object.fromEntries(keep.map((k) => [k, this[k]]));
+    this.stash.camX = this.cam.x;
+    const O = OFFICE;
+    this.L = O;
+    this.cols = O.width;
+    this.tiles = O.tiles.slice();
+    this.Wpx = O.width * T;
+    this.sparks = []; this.secrets = []; this.cps = []; this.signs = []; this.walls = [];
+    this.movers = []; this.enemies = []; this.snacks = []; this.stamps = []; this.missiles = []; this.waves = [];
+    this.exit = { x: -9999, y: 0, lit: false, visible: false, drop: 0 };
+    this.boss = null;
+    this.gateClosed = false;
+    const p = this.player;
+    p.x = 2 * T; p.y = 12 * T - p.h; p.vx = 0; p.vy = 0; p.ride = null; p.facing = 1;
+    this.spawn = { x: 2.5 * T, y: 12 * T };
+    this.cam.x = 0;
+    this.banner = 3.5;
+    this.activeSign = null;
+    this.office = { day: 20, ledger: false, candle: true, closed: false, ghost: 0, say: null, near: null };
+    sfx.secret();
+  }
+
+  exitOffice() {
+    const st = this.stash;
+    for (const [k, v] of Object.entries(st)) if (k !== 'camX') this[k] = v;
+    this.cam.x = st.camX;
+    this.snacks = []; this.stamps = [];
+    const p = this.player;
+    p.x = this.Wpx - 3 * T; p.y = 12 * T - p.h; p.vx = 0; p.vy = 0; p.facing = -1;
+    this.office = null;
+    this.stash = null;
+    this.banner = 0;
+  }
+
+  officeObjects() {
+    const t = this.time;
+    return [
+      { id: 'robot', x: 4.5 * T, label: 'talk to the little robot' },
+      { id: 'ghost', x: 8.3 * T + Math.sin(t * 0.6) * 1.4 * T, label: 'talk to the ghost', wide: true },
+      { id: 'bobb', x: 11.2 * T, label: 'talk to Bobb Crochet' },
+      { id: 'candle', x: 13.4 * T, label: 'snuff the candle' },
+      { id: 'calendar', x: 16 * T, label: 'turn the calendar' },
+      { id: 'door', x: 21 * T, label: 'flip the door sign' },
+    ];
+  }
+
+  // the nearest thing within reach (the ghost can be reached from a bit further away)
+  officeNearest() {
+    const pcx = this.player.x + this.player.w / 2;
+    let best = null, bestD = Infinity;
+    for (const it of this.officeObjects()) {
+      const d = Math.abs(it.x - pcx);
+      if (d < (it.wide ? 70 : 46) && d < bestD) { best = it; bestD = d; }
+    }
+    return best;
+  }
+
+  officeSay(text, x, y = 300) {
+    this.office.say = { text, x, y, life: 4 };
+  }
+
+  officeInteract() {
+    const o = this.office, p = this.player;
+    const obj = this.officeNearest();
+    if (!obj) return false;
+    sfx.click();
+    const day = o.day === 26 ? 'Boxing Day' : `${o.day} December`;
+    switch (obj.id) {
+      case 'robot':
+        this.officeSay('You, boy, what day is it?', obj.x, 380);
+        break;
+      case 'ghost': {
+        const lines = [
+          '*looks revelatory*',
+          '*looks revelatory, and points at the calendar*',
+          '*looks extremely revelatory. Chalk words appear on the wall: DAY, then BOOKS, then LIGHT, then DOOR*',
+        ];
+        this.officeSay(o.closed ? '*looks revelatory, but in a festive way*' : lines[Math.min(o.ghost, 2)], obj.x, 250);
+        o.ghost++;
+        break;
+      }
+      case 'bobb':
+        if (o.closed) this.officeSay('Merry Christmas, one and all!', obj.x, 330);
+        else if (o.ledger) this.officeSay("Books closed! Just the candle and the door now, and I'm off home.", obj.x, 330);
+        else if (o.day === 25) {
+          o.ledger = true;
+          sfx.checkpoint();
+          this.officeSay("Christmas Day? Then the books are closed! Mr Scroop can't argue with that.", obj.x, 330);
+        } else {
+          this.officeSay(`Mr Scroop says I'm to finish this paperwork. It's only ${day}. Unless it's Christmas Day, of course.`, obj.x, 330);
+        }
+        break;
+      case 'candle':
+        if (!o.candle) this.officeSay('Already snuffed out.', obj.x, 360);
+        else if (!o.ledger) this.officeSay("Bobb: Oi! I can't see my paperwork!", obj.x, 360);
+        else {
+          o.candle = false;
+          sfx.flap();
+          this.officeSay('Snuffed out. Very festive.', obj.x, 360);
+        }
+        break;
+      case 'calendar':
+        if (o.ledger) this.officeSay("Best leave the calendar on Christmas Day.", obj.x, 300);
+        else {
+          o.day = o.day >= 26 ? 20 : o.day + 1;
+          this.officeSay(o.day === 26 ? 'Boxing Day. Gone too far!' : `The calendar now says ${o.day} December.`, obj.x, 300);
+        }
+        break;
+      case 'door':
+        if (o.closed) this.officeSay('CLOSED FOR CHRISTMAS', obj.x, 330);
+        else if (!o.ledger) this.officeSay("Bobb's still working. You can't shut the office on him!", obj.x, 330);
+        else if (o.candle) this.officeSay("Not with a candle still burning!", obj.x, 330);
+        else this.officeDone(obj.x);
+        break;
+    }
+    return true;
+  }
+
+  officeDone(x) {
+    const o = this.office;
+    o.closed = true;
+    sfx.win();
+    this.burst(x, 350, 40, 'confetti');
+    this.officeSay('CLOSED FOR CHRISTMAS', x, 330);
+    if (!this.officePrizeTaken) {
+      this.officePrizeTaken = true;
+      this.stats.officeStars = 44;
+      this.toast('+44 stars!');
+      for (let i = 0; i < 12; i++) this.burst(x - 200 + i * 30, 200, 1, 'star');
+      this.hooks.onOfficeDone?.();
+    } else {
+      this.toast("Shut for Christmas. (You've had the stars already.)");
+    }
+  }
+
+  updateOffice(dt) {
+    const o = this.office;
+    if (o.say && (o.say.life -= dt) <= 0) o.say = null;
+    o.near = this.officeNearest();
+  }
+
   // Edna's audit stamp: smashes walls and flattens minions just in front of her
   applyStamp(st) {
     for (const w of this.walls) {
@@ -961,7 +1124,8 @@ export class Game {
     const time = this.clock;
     const timeBonus = Math.max(0, Math.round((this.L.par - time) * 5));
     const base = Math.max(0,
-      s.sparks * 10 + s.secrets * 250 + 500 + timeBonus + s.enemies * 20 + (this.boss ? 1000 : 0) - s.deaths * 50);
+      s.sparks * 10 + s.secrets * 250 + 500 + timeBonus + s.enemies * 20 + (this.boss ? 1000 : 0) - s.deaths * 50)
+      + s.officeStars * 10;
     // every star collected: +20% on the level score
     const allStars = s.total > 0 && s.sparks >= s.total;
     const starBonus = allStars ? Math.round(base * 0.2) : 0;
@@ -969,6 +1133,7 @@ export class Game {
       level: this.levelIndex, sparks: s.sparks, total: s.total, secrets: s.secrets,
       secretTotal: this.secrets.length, deaths: s.deaths, hits: s.hits, time, timeBonus, enemies: s.enemies,
       allStars, starBonus, base, score: base + starBonus, par: this.L.par, boss: this.boss?.type || null,
+      officeStars: s.officeStars,
     };
   }
 
@@ -1149,9 +1314,18 @@ export class Game {
       ctx.restore();
     }
     for (const st of this.stamps) S.drawStamp(ctx, st);
+    if (this.office) this.drawOffice(ctx);
     this.drawPlayer(ctx);
     this.drawParticles(ctx);
 
+    if (this.office) {
+      const o = this.office;
+      if (o.say) S.drawBubble(ctx, o.say.text, clamp(o.say.x, 170, VW - 170), o.say.y, 300);
+      else if (o.near) {
+        const label = o.near.id === 'ghost' ? 'talk to the ghost of Jacob Marlon Harewood' : o.near.label;
+        D.text(ctx, `X (or tap): ${label}`, VW / 2, 535, 20);
+      }
+    }
     if (this.activeSign && this.state === 'play') {
       const s = this.activeSign;
       const bx = clamp(s.x, cx + 170, cx + VW - 170);
@@ -1257,6 +1431,10 @@ export class Game {
     }
   }
 
+  drawOffice(ctx) {
+    S.drawOffice(ctx, this.office, this.time);
+  }
+
   drawPlayer(ctx) {
     const p = this.player;
     if (p.dead <= 0 && p.inv > 0 && Math.floor(p.inv * 14) % 2) return;
@@ -1326,7 +1504,7 @@ export class Game {
     for (let i = 0; i < 3; i++) D.heart(ctx, 30 + i * 34, 32, 13, { fill: i < p.hp ? 'rgba(200,50,60,0.75)' : null });
     D.pen(ctx, D.INK, 2);
     D.star(ctx, 148, 32, 13, { fill: 'rgba(241,200,75,0.7)' });
-    D.text(ctx, `${s.sparks} / ${s.total}`, 168, 33, 26, { align: 'left' });
+    D.text(ctx, `${s.sparks} / ${s.total}${s.officeStars ? ` +${s.officeStars}` : ''}`, 168, 33, 26, { align: 'left' });
     const found = this.secrets.filter((x) => x.got).length;
     for (let i = 0; i < this.secrets.length; i++) {
       ctx.save();
@@ -1368,8 +1546,9 @@ export class Game {
     if (this.banner > 0) {
       ctx.save();
       ctx.globalAlpha = Math.min(1, this.banner);
-      D.text(ctx, `Level ${this.levelIndex + 1}`, VW / 2, 180, 30);
-      D.text(ctx, this.L.name, VW / 2, 228, 54, { sc: true });
+      const by = this.office ? 90 : 0;
+      D.text(ctx, this.office ? 'A secret room!' : `Level ${this.levelIndex + 1}`, VW / 2, 180 - by, 30);
+      D.text(ctx, this.L.name, VW / 2, 228 - by, 54, { sc: true });
       ctx.restore();
     }
 

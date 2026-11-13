@@ -94,7 +94,7 @@ function level1() {
   b.sparkRow(156, 11, 6);
   b.sign(162, 'Light the tree to bring back a bit of Christmas!');
   b.end(170);
-  return { ...b, id: 1, name: 'Boxing Day Leftovers', theme: 1, paper: '#f6efdf', par: 150, difficulty: 0 };
+  return { ...b, id: 1, name: 'Boxing Day Leftovers', theme: 1, paper: '#f6efdf', par: 150, difficulty: 0, secretDoor: true };
 }
 
 function level2() {
@@ -237,4 +237,14 @@ function level4() {
   return { ...b, id: 4, name: "Blue Monday's Tax Office", theme: 4, paper: '#e3d1b0', par: 220, difficulty: 3 };
 }
 
+// The secret room off the end of level 1. Not listed anywhere in the menus.
+function office() {
+  const b = new Builder(24);
+  b.ground(0, 23).block(0, 0, 1, 12).block(23, 0, 1, 12);
+  b.begin(2);
+  b.end(-10);
+  return { ...b, id: 'office', name: "Ebenezer Scroop's Office", theme: 5, paper: '#efe2c8', par: 0, difficulty: 0, secretRoom: true };
+}
+
 export const LEVELS = [level1(), level2(), level3(), level4()];
+export const OFFICE = office();

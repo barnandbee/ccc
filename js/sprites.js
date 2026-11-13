@@ -367,6 +367,146 @@ export function drawBauble(ctx, i, earned, t = 0) {
   ctx.restore();
 }
 
+// Everyone and everything in Ebenezer Scroop's Office
+export function drawOffice(ctx, o, t) {
+  const T = 40, G = 480;
+  D.pen(ctx, INK, 2.3);
+
+  // the little robot, who only knows one question
+  const rx = 4.5 * T, rb = Math.sin(t * 4) * 1.5;
+  D.circle(ctx, rx - 8, G - 5, 5, { fill: INK, amt: 0.2 });
+  D.circle(ctx, rx + 8, G - 5, 5, { fill: INK, amt: 0.2 });
+  D.rect(ctx, rx - 14, G - 36 + rb, 28, 26, { fill: true });
+  D.line(ctx, rx - 8, G - 18 + rb, rx + 8, G - 18 + rb, 0.2);
+  D.line(ctx, rx - 8, G - 14 + rb, rx + 8, G - 14 + rb, 0.2);
+  D.rect(ctx, rx - 10, G - 54 + rb, 20, 17, { fill: true });
+  D.circle(ctx, rx, G - 46 + rb, 4, { fill: true, amt: 0.2 });
+  D.dot(ctx, rx + 1, G - 46 + rb, 1.8);
+  D.line(ctx, rx, G - 54 + rb, rx, G - 64 + rb, 0.2);
+  D.dot(ctx, rx, G - 66 + rb, 2.4, D.RED);
+
+  // the tall clerk's desk with the ledger
+  D.line(ctx, 432, G, 434, 352, 0.5);
+  D.line(ctx, 516, G, 514, 344, 0.5);
+  D.line(ctx, 433, 430, 515, 430, 0.4);
+  D.poly(ctx, [[418, 354], [532, 338], [532, 347], [418, 363]], { fill: true });
+  if (o.ledger) {
+    D.poly(ctx, [[460, 342], [500, 336], [501, 330], [461, 336]], { fill: 'rgba(120,70,40,0.6)', amt: 0.3 });
+  } else {
+    D.poly(ctx, [[446, 346], [474, 342], [476, 330], [448, 334]], { fill: true, amt: 0.3 });
+    D.poly(ctx, [[474, 342], [504, 337], [506, 325], [476, 330]], { fill: true, amt: 0.3 });
+    for (let i = 0; i < 3; i++) D.line(ctx, 452, 336 - i * 3 + 4, 470, 333 - i * 3 + 4, 0.1);
+  }
+
+  // Bobb Crochet, at the desk because his boss said so
+  const bx = 11.2 * T - 4;
+  const working = !o.ledger;
+  D.line(ctx, bx - 6, G - 42, bx - 8, G, 0.4);
+  D.line(ctx, bx + 6, G - 42, bx + 8, G, 0.4);
+  D.ellipse(ctx, bx - 9, G - 3, 6, 3, { fill: INK, amt: 0.2 });
+  D.ellipse(ctx, bx + 9, G - 3, 6, 3, { fill: INK, amt: 0.2 });
+  D.poly(ctx, [[bx - 13, G - 90], [bx + 13, G - 90], [bx + 16, G - 40], [bx - 16, G - 40]], { fill: true });
+  for (const y of [G - 80, G - 66, G - 52]) D.dot(ctx, bx, y, 1.4);
+  if (working) {
+    const scr = Math.sin(t * 14) * 3;
+    D.line(ctx, bx + 11, G - 84, bx + 30 + scr, G - 134, 0.3);
+    D.line(ctx, bx + 30 + scr, G - 134, bx + 38 + scr, G - 156, 0.2);
+    D.line(ctx, bx - 11, G - 84, bx + 14, G - 128, 0.3);
+  } else {
+    const w = Math.sin(t * 6) * 4;
+    D.line(ctx, bx - 11, G - 84, bx - 24, G - 118 + w, 0.3);
+    D.line(ctx, bx + 11, G - 84, bx + 24, G - 118 - w, 0.3);
+  }
+  // long striped scarf
+  D.rect(ctx, bx - 12, G - 96, 24, 7, { fill: 'rgba(200,50,60,0.75)', amt: 0.3 });
+  D.poly(ctx, [[bx + 6, G - 90], [bx + 12, G - 90], [bx + 10, G - 58], [bx + 4, G - 58]], { fill: 'rgba(200,50,60,0.75)', amt: 0.3 });
+  D.line(ctx, bx + 5, G - 80, bx + 11, G - 80, 0.1);
+  D.line(ctx, bx + 5, G - 70, bx + 11, G - 70, 0.1);
+  // head and battered hat
+  const hy = G - 110;
+  D.circle(ctx, bx, hy, 12, { fill: true });
+  D.dot(ctx, bx - 4, hy - 1, 1.4);
+  D.dot(ctx, bx + 5, hy - 1, 1.4);
+  D.line(ctx, bx + 1, hy + 1, bx + 3, hy + 4, 0.1);
+  if (o.closed) D.arc(ctx, bx, hy + 5, 4, 2.5, 0.2, Math.PI - 0.2, 0.1);
+  else D.line(ctx, bx - 3, hy + 6, bx + 3, hy + 6, 0.1);
+  D.line(ctx, bx - 15, hy - 10, bx + 15, hy - 12, 0.3);
+  D.poly(ctx, [[bx - 9, hy - 11], [bx + 9, hy - 12], [bx + 8, hy - 28], [bx - 8, hy - 27]], { fill: true, amt: 0.4 });
+
+  // the candle on its stand
+  const cx = 13.4 * T;
+  D.line(ctx, cx, G, cx, 400, 0.3);
+  D.line(ctx, cx - 14, G, cx + 14, G, 0.3);
+  D.ellipse(ctx, cx, 400, 14, 4, { fill: true, amt: 0.3 });
+  D.rect(ctx, cx - 5, 370, 10, 30, { fill: true, amt: 0.2 });
+  if (o.candle) {
+    const f = Math.sin(t * 20) * 1.5;
+    D.poly(ctx, [[cx, 350 + f], [cx + 5, 362], [cx, 368], [cx - 5, 362]], { fill: GOLD, amt: 0.2 });
+  } else {
+    D.pen(ctx, 'rgba(90,100,121,0.6)', 1.6);
+    D.curve(ctx, [[cx, 368], [cx + 4, 356 - (t * 10) % 6], [cx - 3, 344], [cx + 2, 332]], 0.5);
+    D.pen(ctx, INK, 2.3);
+  }
+
+  // the wall calendar
+  const kx = 16 * T;
+  D.rect(ctx, kx - 28, 180, 56, 66, { fill: true });
+  D.rect(ctx, kx - 28, 180, 56, 16, { fill: 'rgba(200,50,60,0.75)', amt: 0.3 });
+  D.text(ctx, 'DEC', kx, 188, 11, { color: '#fff', sc: true });
+  if (o.day === 26) D.text(ctx, 'BOXING DAY', kx, 220, 10);
+  else D.text(ctx, String(o.day), kx, 222, 30, { color: o.day === 25 ? RED : INK });
+  D.dot(ctx, kx, 174, 2.2);
+
+  // the door and its sign
+  const dx = 21 * T;
+  D.rect(ctx, dx - 32, 300, 64, 180, { fill: true });
+  D.rect(ctx, dx - 24, 312, 48, 70, { amt: 0.4 });
+  D.rect(ctx, dx - 24, 392, 48, 76, { amt: 0.4 });
+  D.dot(ctx, dx + 22, 400, 3);
+  D.line(ctx, dx - 14, 336, dx, 326, 0.2);
+  D.line(ctx, dx + 14, 336, dx, 326, 0.2);
+  D.rect(ctx, dx - 26, 336, 52, 28, { fill: true, amt: 0.3 });
+  if (o.closed) {
+    D.text(ctx, 'CLOSED FOR', dx, 345, 9, { color: RED, sc: true });
+    D.text(ctx, 'CHRISTMAS', dx, 356, 9, { color: RED, sc: true });
+  } else {
+    D.text(ctx, 'OPEN', dx, 350, 15, { sc: true });
+  }
+
+  // the ghost of Jacob Marlon Harewood, looking revelatory
+  const gx = 8.3 * T + Math.sin(t * 0.6) * 1.4 * T, gy = 300 + Math.sin(t * 1.7) * 12;
+  ctx.save();
+  ctx.globalAlpha = 0.6;
+  D.pen(ctx, 'rgba(110,150,210,1)', 2.2);
+  const sheet = [[gx - 18, gy - 18], [gx + 18, gy - 18], [gx + 22, gy + 40]];
+  for (let i = 0; i <= 6; i++) sheet.push([gx + 22 - i * 44 / 6, gy + 40 + (i % 2 ? 8 : 0) + Math.sin(t * 5 + i) * 2]);
+  D.poly(ctx, sheet, { fill: 'rgba(200,220,245,0.5)' });
+  D.circle(ctx, gx, gy - 32, 14, { fill: 'rgba(200,220,245,0.6)' });
+  // jaw bandage with a knot on top
+  D.ellipse(ctx, gx, gy - 30, 16, 9, { rot: Math.PI / 2, amt: 0.3 });
+  D.ellipse(ctx, gx, gy - 48, 4, 3, { amt: 0.2 });
+  // wide revelatory eyes and an O of a mouth
+  D.circle(ctx, gx - 5, gy - 35, 3.6, { amt: 0.2 });
+  D.circle(ctx, gx + 5, gy - 35, 3.6, { amt: 0.2 });
+  D.dot(ctx, gx - 5, gy - 35, 1.3, 'rgba(110,150,210,1)');
+  D.dot(ctx, gx + 5, gy - 35, 1.3, 'rgba(110,150,210,1)');
+  D.circle(ctx, gx, gy - 25, 2.6, { amt: 0.2 });
+  // hands up, revealing things
+  D.line(ctx, gx - 16, gy - 10, gx - 30, gy - 40, 0.4);
+  D.line(ctx, gx + 16, gy - 10, gx + 30, gy - 40, 0.4);
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + t * 0.5;
+    D.line(ctx, gx + Math.cos(a) * 22, gy - 32 + Math.sin(a) * 22, gx + Math.cos(a) * 30, gy - 32 + Math.sin(a) * 30, 0.2);
+  }
+  // chains and cash boxes
+  D.zigzag(ctx, gx - 18, gy + 10, gx - 40, gy + 34, 3, 6);
+  D.rect(ctx, gx - 50, gy + 32, 16, 12, { amt: 0.3 });
+  D.text(ctx, '£', gx - 42, gy + 38, 9, { color: 'rgba(110,150,210,1)' });
+  D.zigzag(ctx, gx + 18, gy + 10, gx + 38, gy + 30, 3, 6);
+  D.rect(ctx, gx + 32, gy + 28, 16, 12, { amt: 0.3 });
+  ctx.restore();
+}
+
 // Clive-Bot's magnetic pulse
 export function drawPulse(ctx, age, dir) {
   ctx.save();
@@ -648,7 +788,29 @@ function bgPiece(ctx, theme, k, x) {
   }
 }
 
+// The secret office's walls: panelling, a frosty window and the firm's sign
+function drawOfficeRoom(ctx) {
+  ctx.save();
+  ctx.globalAlpha = 0.45;
+  D.pen(ctx, INK, 2);
+  D.line(ctx, 40, 330, 920, 330, 1);
+  for (let x = 60; x < 920; x += 110) D.rect(ctx, x, 350, 90, 110, { amt: 1 });
+  D.rect(ctx, 220, 130, 120, 150, { fill: true });
+  D.line(ctx, 280, 130, 280, 280);
+  D.line(ctx, 220, 205, 340, 205);
+  for (let i = 0; i < 12; i++) D.dot(ctx, 228 + D.hash(i * 3) * 104, 138 + D.hash(i * 7) * 134, 2);
+  ctx.restore();
+  D.pen(ctx, INK, 2.2);
+  D.rect(ctx, 380, 150, 220, 42, { fill: true });
+  D.text(ctx, 'SCROOP & HAREWOOD', 490, 171, 20, { sc: true });
+  D.rect(ctx, 610, 360, 120, 26, { fill: true, amt: 0.5 });
+  D.text(ctx, 'E. SCROOP, PROP.', 670, 373, 13, { sc: true });
+  D.line(ctx, 420, 150, 440, 120, 0.5);
+  D.line(ctx, 560, 150, 540, 120, 0.5);
+}
+
 export function drawBackground(ctx, theme, camX, VW) {
+  if (theme === 5) { drawOfficeRoom(ctx); return; }
   ctx.save();
   ctx.globalAlpha = 0.3;
   D.pen(ctx, INK, 2);

@@ -18,12 +18,14 @@ export const AWARDS = [
   { id: 'beat-the-clock', name: 'Beat the Clock', desc: 'Finish Boxing Day Leftovers in under 1 minute 30.', test: (f) => f.speedy },
   { id: 'unbothered', name: 'Unbothered', desc: 'Ignore the Reindeer Influencer into oblivion.', test: (f) => f.reindeer },
   { id: 'monday-cancelled', name: 'Monday Cancelled', desc: 'Defeat Blue Monday.', test: (f) => f.monday },
-  { id: 'morale-officer', name: 'Morale Officer', desc: "Cheer up 100 of January's minions.", test: (f) => f.minions >= 100 },
-  { id: 'stargazer', name: 'Stargazer', desc: 'Collect 1,000 stars in total.', test: (f) => f.stars >= 1000 },
+  { id: 'morale-officer', name: 'Morale Officer', desc: "Cheer up 100 of January's minions.", test: (f) => f.minions >= 100, progress: (f) => [f.minions, 100] },
+  { id: 'stargazer', name: 'Stargazer', desc: 'Collect 1,000 stars in total.', test: (f) => f.stars >= 1000, progress: (f) => [f.stars, 1000] },
   { id: 'on-the-board', name: 'On the Board', desc: 'Put a full run on the high-score board.', test: (f) => f.board },
   { id: 'night-owl', name: 'Night Owl', desc: 'Finish a level in dark mode.', test: (f) => f.dark },
   { id: 'acid-test', name: 'Acid Test', desc: 'Finish a level to Avant Garde Acid Jazz.', test: (f) => f.acid },
-  { id: 'changed-sides', name: 'Changed Sides', desc: 'Unlock Blue Monday by finishing the game as 3 different characters.', test: (f) => f.mondayUnlocked },
+  // a secret until earned: the name and description are hidden so Blue Monday stays a surprise
+  { id: 'changed-sides', name: 'Changed Sides', desc: 'Blue Monday has joined your side.', secret: 'A surprise for finishing the game as 3 different characters.', test: (f) => f.mondayUnlocked },
+  { id: 'ebenezer', name: 'Ebenezer', desc: 'Shut up shop for Christmas.', test: (f) => f.ebenezer },
   { id: 'fully-decorated', name: 'Fully Decorated', desc: 'Earn every other bauble.', test: (f, earned) => AWARDS.every((a) => a.id === 'fully-decorated' || earned[a.id]) },
 ];
 
@@ -32,7 +34,7 @@ export function blankFacts() {
     levels: 0, stars: 0, minions: 0, surfBest: 0, chars: [],
     fullRun: false, seasonSaved: false, allCards: false, allStars: false, allSecrets: false,
     noHit: false, speedy: false, reindeer: false, monday: false, board: false,
-    dark: false, acid: false, mondayUnlocked: false,
+    dark: false, acid: false, mondayUnlocked: false, ebenezer: false,
   };
 }
 

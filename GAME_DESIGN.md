@@ -61,6 +61,9 @@ Early levels have generous checkpoints and respawning. Later levels add trickier
 - **Music**: Festive carols or generated Avant Garde Acid Jazz (walking bass, swung ride, acid line, odd time signatures).
 - **Blue Monday** (#018) becomes playable after finishing the game as 3 different characters: Deadline Toss (lobbed tax forms) and Leap Day (a long mid-air leap).
 
+- **Blue Monday** is hidden completely until unlocked (no tile, no silhouette; his bauble shows as ???).
+- **A secret** in level 1, documented only in the code (`enterOffice` in js/game.js) so it stays a surprise for players reading this page.
+
 ## Collectibles
 
 - **Sparks of Seasonal Spirit**: biro stars, the main collectible.

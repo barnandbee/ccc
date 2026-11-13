@@ -368,3 +368,5 @@ body.playing, body.playing #app { touch-action: none; }
 .stats-table tr.bonus-row td { color: #b8860b; font-weight: bold; }
 :root[data-theme="dark"] .stats-table tr.bonus-row td { color: #f1c84b; }
 .char-tile.special { border-style: dashed; }
+.award .progress { height: 10px; margin: 4px 0 2px; padding: 1px; border-width: 1.5px; overflow: hidden; }
+.award .progress span { display: block; height: 100%; background: rgba(241, 200, 75, 0.85); border-radius: 6px; }

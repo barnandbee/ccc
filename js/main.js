@@ -71,7 +71,7 @@ let pausedForRotate = false;
 const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 
 const canvas = $('#game');
-const game = new Game(canvas, { onComplete, onPause: pauseGame });
+const game = new Game(canvas, { onComplete, onPause: pauseGame, onOfficeDone });
 const surf = new Surf(canvas, { onComplete, onPause: pauseGame });
 let engine = game; // whichever is running: the platformer or the bonus surf level
 if (DEV) window.__surf = surf;
@@ -195,9 +195,9 @@ function paintCanvas(c, t) {
     for (const [l, y, r] of tiers) D.poly(ctx, [[l, y], [280, y - 130], [r, y]], { fill: 'rgba(76,175,106,0.25)' });
     D.rect(ctx, 262, 360, 36, 26, { fill: true });
     D.star(ctx, 280, 52, 20, { fill: 'rgba(241,200,75,0.8)', rot: Math.sin(t) * 0.1 });
-    // rows of hooks that sit inside each tier of the tree (7 + 5 + 5 + 3 = 20)
+    // rows of hooks that sit inside each tier of the tree (7 + 5 + 5 + 4 = 21)
     const slots = [];
-    const rows = [[0, 25, 7], [0, 65, 5], [1, 25, 5], [2, 30, 3]];
+    const rows = [[0, 25, 7], [0, 65, 5], [1, 25, 5], [2, 30, 4]];
     for (const [tier, up, count] of rows) {
       const [l, base, r] = tiers[tier];
       const y = base - up;
@@ -224,10 +224,11 @@ function paintCanvas(c, t) {
       D.line(ctx, 280 + Math.cos(a) * 120, 230 + Math.sin(a) * 120, 280 + Math.cos(a) * 175, 230 + Math.sin(a) * 175, 1.2);
     }
     for (const [x, y] of [[60, 60], [500, 50], [120, 150], [440, 140]]) D.star(ctx, x, y, 10, { fill: 'rgba(241,200,75,0.7)' });
-    const n = ORDER.length;
+    const shown = ORDER.filter((id) => !CHARACTERS[id].unlockedBy || cards[id]);
+    const n = shown.length;
     const gap = 470 / n;
     const sc = Math.min(2, gap / 34);
-    ORDER.forEach((id, i) => {
+    shown.forEach((id, i) => {
       const x = 45 + gap * (i + 0.5);
       if (cards[id]) {
         const hop = Math.max(0, Math.sin(t * 3 + i * 1.7)) * 10;
@@ -316,6 +317,17 @@ function toggleMusic() {
 $('#musicBtn').addEventListener('click', toggleMusic);
 $('#pauseMusic').addEventListener('click', toggleMusic);
 
+// ---------- The secret office ----------
+function onOfficeDone() {
+  const p = prog(current);
+  if (p.office) return;
+  p.office = true;
+  save.facts.ebenezer = true;
+  save.facts.stars += 44;
+  awardCheck();
+  persist();
+}
+
 // ---------- Awards (baubles) ----------
 // Characters (other than Blue Monday) who have finished the game
 function completions() {
@@ -373,9 +385,17 @@ function openAwards() {
   $('#awardList').innerHTML = AWARDS.map((a, i) => {
     const got = save.awards[a.id];
     const when = got ? new Date(got).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+    const name = got || !a.secret ? a.name : '???';
+    const desc = got || !a.secret ? a.desc : a.secret;
+    let bar = '';
+    if (a.progress && !got) {
+      const [have, need] = a.progress(save.facts);
+      const pct = Math.min(100, Math.round((have / need) * 100));
+      bar = `<div class="progress sketch" title="${have} of ${need}"><span style="width:${pct}%"></span></div><small>${Math.min(have, need).toLocaleString('en-GB')} / ${need.toLocaleString('en-GB')}</small>`;
+    }
     return `<div class="award ${got ? 'got' : ''}">
       <canvas class="portrait sized" width="50" height="60" data-bauble="${i}" data-earned="${got ? 1 : 0}"></canvas>
-      <div><b>${esc(a.name)}</b><p>${esc(a.desc)}</p>${got ? `<small>Earned ${esc(when)}</small>` : ''}</div>
+      <div><b>${esc(name)}</b><p>${esc(desc)}</p>${bar}${got ? `<small>Earned ${esc(when)}</small>` : ''}</div>
     </div>`;
   }).join('');
   show('awards');
@@ -416,6 +436,7 @@ function openSelect() {
   for (const id of ORDER) {
     const ch = CHARACTERS[id];
     const unlocked = !!cards[id];
+    if (ch.unlockedBy && !unlocked) continue; // a full surprise until unlocked
     const btn = document.createElement('button');
     btn.className = `char-tile sketch ${ch.cardTone}${ch.unlockedBy ? ' special' : ''}`;
     let state = unlocked ? 'Unlocked: tap to see the card' : 'Locked: tap to unlock';
@@ -504,7 +525,7 @@ function openCard(id) {
           <canvas class="portrait" width="150" height="170" data-char="${id}" data-tone="${ch.cardTone}"></canvas>
           <dl class="stats">${card.stats.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
         </div>
-        <div class="signature">x ${esc(ch.name)}</div>
+        <div class="signature">x ${esc(card.signature || ch.name)}</div>
       </div>
     </div>
     <div class="ability sketch">
@@ -530,7 +551,7 @@ function totalStars(id) {
   const p = prog(id);
   let sum = 0;
   for (let i = 0; i < BONUS_STAR_LEVELS; i++) sum += Math.max(p.stars?.[i] || 0, p.best[i]?.sparks || 0);
-  return sum;
+  return sum + (p.office ? 44 : 0);
 }
 function bonusOpen(id) {
   return DEV || totalStars(id) >= STARS_FOR_BONUS;
@@ -627,7 +648,7 @@ function startLevel(i) {
   if (engine !== (i === BONUS ? surf : game)) engine.stop();
   engine = i === BONUS ? surf : game;
   if (i === BONUS) surf.start(current, cards[current], prog(current).best[BONUS]?.distance || 0);
-  else game.start(i, current, cards[current]);
+  else game.start(i, current, cards[current], { officeDone: !!prog(current).office });
   checkRotate();
   showSwipeHint();
 }
@@ -738,6 +759,7 @@ function onComplete(result) {
     <tr><td>Tree lit</td><td></td><td>500</td></tr>
     ${result.boss ? '<tr><td>Boss beaten</td><td></td><td>1000</td></tr>' : ''}
     <tr><td>Tumbles</td><td>${result.deaths}</td><td>${result.deaths ? -result.deaths * 50 : 0}</td></tr>
+    ${result.officeStars ? `<tr class="bonus-row"><td>★ A secret reward</td><td>+${result.officeStars}</td><td>${result.officeStars * 10}</td></tr>` : ''}
     ${result.allStars ? `<tr class="bonus-row"><td>★ Every star! Bonus</td><td>+20%</td><td>${result.starBonus.toLocaleString('en-GB')}</td></tr>` : ''}
     <tr class="total"><td>Score</td><td></td><td>${result.score.toLocaleString('en-GB')}</td></tr>`;
   const unlocked = !bonusWasOpen && bonusOpen(current) ? ` Bonus level unlocked: ${BONUS_NAME}!` : '';
