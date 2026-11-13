@@ -85,6 +85,9 @@ export const sfx = {
   wrong: () => { tone(220, 0.15, { vol: 0.12 }); tone(180, 0.25, { vol: 0.12, at: 0.15 }); },
   unlock: () => [392, 523, 659, 784, 1047].forEach((f, i) => tone(f, 0.25, { type: 'triangle', vol: 0.15, at: i * 0.09 })),
   click: () => tone(900, 0.04, { type: 'triangle', vol: 0.08 }),
+  pulse: () => { tone(220, 0.18, { type: 'sawtooth', vol: 0.1, slide: 600 }); tone(880, 0.12, { type: 'square', vol: 0.05, at: 0.04 }); },
+  harp: () => [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.35, { type: 'triangle', vol: 0.09, at: i * 0.035 })),
+  flap: () => noise(0.12, { vol: 0.16, freq: 700, sweep: -300, q: 0.8 }),
   engage: () => { tone(988, 0.08, { type: 'square', vol: 0.1 }); tone(1319, 0.2, { type: 'square', vol: 0.1, at: 0.08 }); },
   wave: () => noise(0.5, { vol: 0.2, freq: 500, sweep: -300, q: 0.6 }),
 };

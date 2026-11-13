@@ -34,8 +34,13 @@ January has come early and is draining the Seasonal Spirit. The characters from 
 |---|---|---|
 | Tim Ternabet #001 | See the card | **Throw**: lobs his favourite food at enemies. **Hair glide**: floats down slowly using his hair. |
 | Rex P. Majestrum #042 | See the card | **Keirin sprint**: a burst of speed that smashes breakable walls of January gloom. |
+| Clive-Bot 1400 #022 | See the card | **Ski jump**: press jump again in mid-air. **Magnet pulse**: zaps minions, three crack a gloom wall. |
+| Dr. Rinky #033 | See the card | **Raptor pounce**: a leaping pounce that smashes walls and minions, also mid-air. |
+| J. Satsuma MacEagle #147 | See the card | **Wing flaps**: up to three mid-air jumps. **Harp blast**: clears minions in its path, two crack a wall. |
+| Wide Watson #208 | See the card | **Wide-head charge**: smashes walls and minions, also mid-air. **Head balloon**: hold jump to float. |
+| Edna Bilton-Claws #2468 | See the card | **Audit stamp**: smashes a wall or minion just in front in one go. **EBC Bounce**: a forward-pushing mid-air jump. |
 
-Only these two characters for now. Adding more later should only take a new data entry plus artwork.
+Every character needs a way across the 8-tile gaps and a way through gloom walls; `tools/check-levels.mjs` checks the gaps for each one.
 
 ## Levels
 

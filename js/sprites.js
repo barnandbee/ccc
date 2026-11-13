@@ -274,6 +274,15 @@ export function drawTrinket(ctx, kind, t = 0, faded = false) {
     ctx.translate(0, 2);
     drawSnack(ctx, 0.3, 1.1);
     ctx.restore();
+  } else if (kind !== 'rex') {
+    ctx.translate(0, Math.sin(t * 3) * 2);
+    D.pen(ctx, GOLD, 2);
+    for (let i = 0; i < 6; i++) {
+      const a = t * 1.5 + (i * Math.PI) / 3;
+      D.line(ctx, Math.cos(a) * 18, Math.sin(a) * 18 - 4, Math.cos(a) * 23, Math.sin(a) * 23 - 4, 0.3);
+    }
+    D.pen(ctx, INK, 2);
+    drawTreasure(ctx, kind, t);
   } else {
     ctx.translate(0, Math.sin(t * 3) * 2);
     D.pen(ctx, GOLD, 2);
@@ -289,6 +298,96 @@ export function drawTrinket(ctx, kind, t = 0, faded = false) {
     D.ellipse(ctx, 0, -11, 3.5, 1.4, { fill: GOLD, amt: 0.2 });
   }
   ctx.restore();
+}
+
+// Hidden treasures for the batch 2 characters, each from their card
+function drawTreasure(ctx, kind, t) {
+  if (kind === 'clive') {
+    // a cheeky marg
+    D.poly(ctx, [[-11, -12], [11, -12], [0, 0]], { fill: 'rgba(160,220,120,0.6)', amt: 0.3 });
+    D.line(ctx, 0, 0, 0, 9, 0.2);
+    D.line(ctx, -6, 9, 6, 9, 0.2);
+    for (let x = -9; x <= 9; x += 3) D.dot(ctx, x, -13, 1, '#fff');
+    D.circle(ctx, 9, -13, 4, { fill: 'rgba(160,220,120,0.9)', amt: 0.2 });
+  } else if (kind === 'watson') {
+    // a flaming pudding
+    D.pen(ctx, RED, 2);
+    for (let i = -1; i <= 1; i++) D.curve(ctx, [[i * 5, -8], [i * 7 + Math.sin(t * 9 + i) * 2, -16], [i * 4, -22]], 0.4);
+    D.pen(ctx, INK, 2);
+    D.circle(ctx, 0, 0, 10, { fill: 'rgba(120,70,40,0.7)' });
+    D.poly(ctx, [[-9, -4], [-5, 0], [0, -4], [5, 0], [9, -4], [6, -9], [-6, -9]], { fill: '#fff', amt: 0.3 });
+  } else if (kind === 'rinky') {
+    // a Malted Brontosaurus biscuit
+    D.rect(ctx, -14, -9, 28, 18, { fill: 'rgba(222,180,120,0.8)', amt: 0.4 });
+    D.curve(ctx, [[-9, 3], [-4, -3], [3, -3], [7, -7], [9, -6]], 0.2);
+    D.line(ctx, -5, 3, -5, 6, 0.1);
+    D.line(ctx, 3, 3, 3, 6, 0.1);
+    for (const [x, y] of [[-10, -6], [10, -6], [-10, 6], [10, 6]]) D.dot(ctx, x, y, 1);
+  } else if (kind === 'satsuma') {
+    // a tangerine (never a satsuma)
+    D.circle(ctx, 0, 0, 11, { fill: 'rgba(245,150,40,0.85)' });
+    D.ellipse(ctx, 4, -12, 5, 2.5, { rot: -0.4, fill: 'rgba(76,175,106,0.7)', amt: 0.2 });
+    D.dot(ctx, -3, -3, 1, '#fff');
+  } else if (kind === 'edna') {
+    // an extreme garage cassette
+    D.rect(ctx, -15, -10, 30, 20, { fill: true, amt: 0.4 });
+    D.rect(ctx, -11, -7, 22, 6, { fill: 'rgba(224,122,208,0.6)', amt: 0.2 });
+    D.text(ctx, 'GARAGE', 0, -4, 5);
+    D.circle(ctx, -6, 4, 3, { amt: 0.2 });
+    D.circle(ctx, 6, 4, 3, { amt: 0.2 });
+  }
+}
+
+// Clive-Bot's magnetic pulse
+export function drawPulse(ctx, age, dir) {
+  ctx.save();
+  ctx.scale(dir, 1);
+  D.pen(ctx, RED, 2.4);
+  for (let i = 0; i < 3; i++) {
+    const r = 6 + i * 5 + (age * 40) % 5;
+    D.arc(ctx, -i * 6, 0, r * 0.6, r, -Math.PI / 2.4, Math.PI / 2.4, 0.3);
+  }
+  D.pen(ctx, INK, 2);
+  D.dot(ctx, 4, 0, 3, INK);
+  ctx.restore();
+}
+
+// MacEagle's harp blast: a ripple of sound with notes
+export function drawHarpWave(ctx, age, dir) {
+  ctx.save();
+  ctx.scale(dir, 1);
+  const grow = 1 + age * 0.6;
+  D.pen(ctx, INK, 2);
+  for (let i = 0; i < 3; i++) D.arc(ctx, -i * 7, 0, 7 * grow, 20 * grow, -Math.PI / 2.3, Math.PI / 2.3, 0.4);
+  ctx.restore();
+  D.pen(ctx, INK, 1.8);
+  for (let i = 0; i < 2; i++) {
+    const nx = -dir * (10 + i * 12), ny = -18 + Math.sin(age * 10 + i) * 6 + i * 16;
+    D.ellipse(ctx, nx, ny, 3, 2.2, { fill: INK, amt: 0.1 });
+    D.line(ctx, nx + 2.5, ny, nx + 2.5, ny - 10, 0.1);
+  }
+}
+
+// Edna's audit stamp coming down, then the AUDITED mark it leaves
+export function drawStamp(ctx, st) {
+  const cx = st.x + st.w / 2, base = st.y + st.h;
+  if (st.life > 0.12) {
+    const k = Math.min(1, (0.3 - st.life) / 0.18);
+    const y = base - 70 + k * 60;
+    D.pen(ctx, INK, 2.4);
+    D.circle(ctx, cx, y - 30, 7, { fill: true, amt: 0.3 });
+    D.line(ctx, cx, y - 23, cx, y - 10, 0.2);
+    D.rect(ctx, cx - 26, y - 10, 52, 12, { fill: true, amt: 0.4 });
+    D.rect(ctx, cx - 26, y + 2, 52, 5, { fill: 'rgba(200,50,60,0.8)', amt: 0.3 });
+  }
+  if (st.life < 0.18) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1, (st.life + 0.4) / 0.4));
+    D.pen(ctx, RED, 2.2);
+    D.rect(ctx, cx - 34, base - 46, 68, 22, { amt: 0.6 });
+    D.text(ctx, 'AUDITED', cx, base - 35, 15, { color: RED, sc: true, rot: -0.08 });
+    ctx.restore();
+  }
 }
 
 // ---------- Scenery ----------

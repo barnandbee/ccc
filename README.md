@@ -54,9 +54,9 @@ This keeps the answers away from anyone reading the code. A determined friend wi
    }
    ```
 
-   The file must include every character, not just the new one, because the tool rewrites `js/locks.js` from scratch.
-2. Run `node tools/encrypt.mjs path/to/cards.private.json`. It rewrites `js/locks.js`.
-3. Add the character's public details (name, number, question, drawing function and moves) to `js/characters.js`, and add their ID to `ORDER`.
+   The file only needs the new characters: the tool keeps everyone already in `js/locks.js`. Add `"key"` to choose the word to match for multi-word answers (for example `"pooh"` for "Winnie the Pooh"), and `"alsoAccept"` to list other answers that must work.
+2. Run `node tools/encrypt.mjs path/to/cards.private.json`. It updates `js/locks.js`.
+3. Add the character's public details (name, number, question, drawing function, moves and tutorial `hints`) to `js/characters.js`, and add their ID to `ORDER`. Moves can mix `projectile` (`snack`, `pulse` or `harp`), `glide` (fall speed), `sprint`, `pounce`, `stamp` and `airJumps`.
 4. Run `node tools/check-levels.mjs` to make sure the new character can finish every level.
 
 ## Shared high scores (optional)

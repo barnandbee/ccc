@@ -89,6 +89,13 @@ function simulate(g, node, act, onLand) {
       if (t === 0) jp = true;
       input.jump = t < act.jump;
     }
+    // extra presses in mid-air (ski jump, flaps, bounce)
+    if (act.air) {
+      for (const at of act.air) {
+        if (Math.abs(t - at) < DT / 2) { jp = true; input.jump = true; }
+        else if (t > at && t < at + 0.15) input.jump = true;
+      }
+    }
     if (act.special != null && Math.abs(t - act.special) < DT / 2) sp = true;
     g.updateMovers(DT);
     tau += DT;
@@ -112,15 +119,26 @@ function simulate(g, node, act, onLand) {
 
 function actions(cid, hasMovers) {
   const ch = CHARACTERS[cid];
+  const ab = ch.abilities;
   const out = [];
   const delays = hasMovers ? [0, 0.8, 1.6, 2.4, 3.2, 4.0, 4.8, 5.6] : [0];
-  const specials = ch.abilities.sprint ? [null, 0.1, 0.25, 0.4, 0.55] : [null];
+  const specials = ab.sprint || ab.pounce ? [null, 0.1, 0.25, 0.4, 0.55] : [null];
+  // mid-air jump timings to try
+  let airs = [null];
+  if (ab.airJumps) {
+    const n = ab.airJumps.count;
+    airs = [null, [0.2], [0.35], [0.5]];
+    if (n >= 2) airs.push([0.3, 0.6], [0.4, 0.75]);
+    if (n >= 3) airs.push([0.3, 0.6, 0.9], [0.45, 0.8, 1.15]);
+  }
   for (const d of [-1, 0, 1]) {
     for (const run of d ? [false, true] : [false]) {
       for (const jump of [null, 0.08, 0.2, 99]) {
         for (const special of specials) {
-          for (const release of d ? [null, 0.35] : [null]) {
-            for (const delay of delays) out.push({ d, run, jump, special, release, delay });
+          for (const air of jump == null ? [null] : airs) {
+            for (const release of d ? [null, 0.35] : [null]) {
+              for (const delay of delays) out.push({ d, run, jump, special, air, release, delay });
+            }
           }
         }
       }

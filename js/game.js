@@ -8,12 +8,21 @@ import { sfx, playMusic } from './audio.js';
 import { input } from './input.js';
 
 export const VW = 960, VH = 560;
-const GRAV = 2100, JUMP_V = 760, MAX_FALL = 950, GLIDE_FALL = 115;
+const GRAV = 2100, JUMP_V = 760, MAX_FALL = 950;
 const COYOTE = 0.1, BUFFER = 0.13;
 const SPRINT_V = 640, SPRINT_T = 0.38, SPRINT_CD = 0.85;
 const STEP = 1 / 120;
 export const LEVEL_MUSIC = ['deck', 'jingle', 'deck', 'godrest'];
 
+// projectile kinds: Tim's prawns, Clive-Bot's magnet pulse, MacEagle's harp blast
+const PROJ = {
+  snack: { cd: 0.28, life: 1.6, g: 1300, speed: 520, vy: -320, pierce: false, dmg: 1, r: 10 },
+  pulse: { cd: 0.3, life: 0.55, g: 0, speed: 640, vy: 0, pierce: false, dmg: 1, r: 12 },
+  harp: { cd: 0.5, life: 1.0, g: 0, speed: 420, vy: 0, pierce: true, dmg: 2, r: 22 },
+};
+const POUNCE_V = 560;
+// sprinting, charging or pouncing: smashes walls and minions, can't be hurt
+const smashing = (o) => o.sprintT > 0 || o.pounceT > 0;
 const isSolid = (v) => v === TILE.SOLID || v === TILE.CONV_L || v === TILE.CONV_R || v === TILE.GLOOM;
 const approach = (v, target, d) => (v < target ? Math.min(v + d, target) : Math.max(v - d, target));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -106,7 +115,7 @@ export class Game {
     this.signs = L.signs.map((s) => ({
       x: s.x * T + T / 2,
       y: (s.y + 1) * T,
-      text: typeof s.text === 'string' ? s.text : s.text[this.charId],
+      text: typeof s.text === 'string' ? s.text : this.ch.hints[s.text.hint],
     }));
     this.walls = L.walls.map((w, k) => ({ ...w, hp: 3, alive: true, seed: k + 1, shake: 0 }));
     this.movers = L.movers.map((m) => ({
@@ -118,6 +127,7 @@ export class Game {
     this.boss = L.boss ? this.makeBoss(L.boss) : null;
     this.gateClosed = false;
     this.snacks = [];
+    this.stamps = [];
     this.missiles = [];
     this.waves = [];
     this.particles = [];
@@ -139,6 +149,7 @@ export class Game {
       x: sp.x - 14, y: sp.y - 54, w: 28, h: 54, vx: 0, vy: 0,
       onGround: false, facing: 1, coyote: 0, jumpBuf: 0, hp: 3, inv: 0, knock: 0,
       sprintT: 0, sprintCD: 0, throwCD: 0, throwAnim: 0, gliding: false, dead: 0,
+      airJumpsLeft: 0, ski: false, fullRise: false, pounceT: 0, pounceCD: 0, pouncedAir: false, stampCD: 0,
       phase: 0, ride: null, groundTile: 0, canRide: true,
     };
   }
@@ -186,7 +197,7 @@ export class Game {
     for (let ty = top; ty <= bot; ty++) {
       const v = this.tileAt(tx, ty);
       if (!isSolid(v)) continue;
-      if (v === TILE.GLOOM && o === this.player && o.sprintT > 0) {
+      if (v === TILE.GLOOM && o === this.player && smashing(o)) {
         this.breakWall(tx, ty);
         continue;
       }
@@ -240,10 +251,10 @@ export class Game {
   findWall(tx, ty) {
     return this.walls.find((w) => w.alive && w.x === tx && ty >= w.y && ty < w.y + w.h);
   }
-  hitWall(tx, ty) {
+  hitWall(tx, ty, dmg = 1) {
     const w = this.findWall(tx, ty);
     if (!w) return;
-    w.hp--;
+    w.hp -= dmg;
     w.shake = 0.2;
     sfx.crack();
     this.burst(tx * T + T / 2, ty * T + T / 2, 6, 'debris');
@@ -286,6 +297,11 @@ export class Game {
     }
     this.updateEnemies(dt);
     this.updateSnacks(dt);
+    for (const st of this.stamps) {
+      st.life -= dt;
+      if (st.life > 0.1) this.applyStamp(st);
+    }
+    this.stamps = this.stamps.filter((st) => st.life > -0.4);
     this.updateBoss(dt);
     this.updateParticles(dt);
     this.updateCamera(dt);
@@ -327,16 +343,52 @@ export class Game {
     if (p.onGround) p.coyote = COYOTE; else p.coyote -= dt;
     let dir = (input.right ? 1 : 0) - (input.left ? 1 : 0);
     if (p.knock > 0) dir = 0;
+    const ab = ch.abilities;
+    p.pounceCD -= dt;
+    p.stampCD -= dt;
+    if (p.onGround) {
+      p.airJumpsLeft = ab.airJumps?.count || 0;
+      p.ski = false;
+      p.pouncedAir = false;
+    }
 
     if (sp) {
-      if (ch.abilities.throw && p.throwCD <= 0 && this.snacks.length < 3) {
+      const proj = ab.projectile;
+      if (proj && p.throwCD <= 0 && this.snacks.length < 3) {
+        const d = PROJ[proj];
         this.snacks.push({
-          x: p.x + p.w / 2 + p.facing * 10, y: p.y + 12,
-          vx: p.facing * 520 + p.vx * 0.3, vy: -320, rot: 0, dir: p.facing, life: 1.6,
+          type: proj, x: p.x + p.w / 2 + p.facing * 10, y: proj === 'snack' ? p.y + 12 : p.y + p.h * 0.42,
+          vx: p.facing * d.speed + (proj === 'snack' ? p.vx * 0.3 : 0), vy: d.vy, rot: 0, dir: p.facing,
+          life: d.life, age: 0, hitBoss: false,
         });
-        p.throwCD = 0.28;
-        p.throwAnim = 0.18;
-        sfx.throw();
+        p.throwCD = d.cd;
+        p.throwAnim = 0.2;
+        if (proj === 'harp') sfx.harp(); else if (proj === 'pulse') sfx.pulse(); else sfx.throw();
+      }
+      if (ab.pounce && p.pounceCD <= 0 && p.pounceT <= 0 && (p.onGround || !p.pouncedAir)) {
+        if (dir) p.facing = dir;
+        if (!p.onGround) p.pouncedAir = true;
+        p.pounceT = 0.9;
+        p.pounceCD = 0.8;
+        p.vy = -560;
+        p.vx = p.facing * POUNCE_V;
+        p.onGround = false;
+        p.ride = null;
+        sfx.sprint();
+        this.burst(p.x + p.w / 2, p.y + p.h, 5, 'dust');
+      }
+      if (ab.stamp && p.stampCD <= 0) {
+        if (dir) p.facing = dir;
+        const st = {
+          x: p.facing > 0 ? p.x + p.w - 6 : p.x - 64, y: p.y - 6, w: 70, h: p.h + 6,
+          life: 0.3, dir: p.facing,
+        };
+        this.stamps.push(st);
+        p.stampCD = 0.5;
+        p.throwAnim = 0.3;
+        sfx.slam();
+        this.shake = 0.12;
+        this.applyStamp(st);
       }
       if (ch.abilities.sprint && p.sprintCD <= 0) {
         if (dir) p.facing = dir;
@@ -355,8 +407,17 @@ export class Game {
       p.gliding = false;
       if (Math.random() < 0.4) this.burst(p.x + p.w / 2 - p.facing * 20, p.y + 8 + Math.random() * 30, 1, 'line');
       if (p.sprintT <= 0) p.vx = p.facing * ch.speed;
+    } else if (p.pounceT > 0) {
+      p.pounceT -= dt;
+      if (p.onGround && p.pounceT < 0.82) p.pounceT = 0;
+      p.vx = p.facing * POUNCE_V;
+      p.vy = Math.min(p.vy + GRAV * dt, MAX_FALL);
+      p.gliding = false;
+      if (Math.random() < 0.4) this.burst(p.x + p.w / 2 - p.facing * 20, p.y + 8 + Math.random() * 30, 1, 'line');
     } else {
-      const target = dir * ch.speed;
+      const aj = ab.airJumps;
+      const target = dir * ch.speed * (p.ski && !p.onGround ? aj.boost : 1)
+        || (p.ski && !p.onGround ? p.facing * ch.speed * aj.boost : 0);
       let a = dir ? ch.accel : ch.friction;
       if (!p.onGround) a *= ch.airControl;
       if (dir && Math.sign(p.vx) === -dir) a *= 1.8;
@@ -370,14 +431,28 @@ export class Game {
         p.ride = null;
         sfx.jump();
         this.burst(p.x + p.w / 2, p.y + p.h, 4, 'dust');
+      } else if (jp && aj && !p.onGround && p.coyote <= 0 && p.airJumpsLeft > 0) {
+        // mid-air jump: Clive-Bot's ski jump, MacEagle's flaps, Edna's EBC Bounce
+        p.airJumpsLeft--;
+        p.vy = -aj.vy;
+        p.jumpBuf = 0;
+        p.fullRise = true;
+        if (aj.boost) {
+          // ski jump and EBC Bounce also push forwards until landing
+          p.ski = true;
+          p.vx = (dir || p.facing) * ch.speed * aj.boost;
+        }
+        if (aj.kind === 'flap') sfx.flap(); else sfx.jump();
+        this.burst(p.x + p.w / 2, p.y + p.h, aj.kind === 'flap' ? 3 : 5, 'dust');
       }
       let g = GRAV;
-      if (p.vy < 0 && !input.jump) g *= 2.4;
+      if (p.vy >= 0) p.fullRise = false;
+      if (p.vy < 0 && !input.jump && !p.fullRise) g *= 2.4;
       p.vy += g * dt;
       p.gliding = false;
-      if (ch.abilities.glide && input.jump && !p.onGround && p.vy > 0) {
+      if (ab.glide && input.jump && !p.onGround && p.vy > 0) {
         p.gliding = true;
-        p.vy = Math.min(p.vy, GLIDE_FALL);
+        p.vy = Math.min(p.vy, ab.glide);
       }
       p.vy = Math.min(p.vy, MAX_FALL);
     }
@@ -391,7 +466,7 @@ export class Game {
       p.y += p.ride.dy;
     }
     this.moveX(p, p.vx * dt + ex);
-    if (p.hitWall && p.sprintT <= 0) p.vx = 0;
+    if (p.hitWall && !smashing(p)) p.vx = 0;
     this.moveY(p, p.vy * dt);
     p.phase += Math.abs(p.vx) * dt * 0.06;
 
@@ -523,7 +598,7 @@ export class Game {
           this.defeat(e);
           p.vy = input.jump ? -760 : -500;
           sfx.stomp();
-        } else if (p.sprintT > 0) {
+        } else if (smashing(p)) {
           this.defeat(e);
           sfx.stomp();
         } else {
@@ -548,28 +623,30 @@ export class Game {
 
   updateSnacks(dt) {
     for (const s of this.snacks) {
-      s.vy += 1300 * dt;
+      const d = PROJ[s.type || 'snack'];
+      s.vy += d.g * dt;
       s.x += s.vx * dt;
       s.y += s.vy * dt;
       s.rot += dt * 14 * s.dir;
       s.life -= dt;
+      s.age += dt;
       const tx = Math.floor(s.x / T), ty = Math.floor(s.y / T);
       const v = this.tileAt(tx, ty);
-      if (v === TILE.GLOOM) { this.hitWall(tx, ty); s.life = 0; continue; }
+      if (v === TILE.GLOOM) { this.hitWall(tx, ty, d.dmg); s.life = 0; continue; }
       if (isSolid(v)) { s.life = 0; this.burst(s.x, s.y, 4, 'dot'); continue; }
-      const box = { x: s.x - 10, y: s.y - 10, w: 20, h: 20 };
+      const box = { x: s.x - d.r, y: s.y - d.r, w: d.r * 2, h: d.r * 2 };
       for (const e of this.enemies) {
         if (e.alive && overlap(box, e)) {
           this.defeat(e);
           sfx.stomp();
-          s.life = 0;
-          break;
+          if (!d.pierce) { s.life = 0; break; }
         }
       }
       const b = this.boss;
-      if (s.life > 0 && b && b.active && !b.dead && overlap(box, b)) {
+      if (s.life > 0 && !s.hitBoss && b && b.active && !b.dead && overlap(box, b)) {
         if (b.type === 'reindeer') this.engage(b); else this.damageBoss();
-        s.life = 0;
+        s.hitBoss = true;
+        if (!d.pierce) s.life = 0;
       }
     }
     this.snacks = this.snacks.filter((s) => s.life > 0 && s.y < VH + 40);
@@ -649,9 +726,10 @@ export class Game {
         this.damageBoss();
         p.vy = -760;
         sfx.stomp();
-      } else if (p.sprintT > 0) {
+      } else if (smashing(p)) {
         this.damageBoss();
         p.sprintT = 0;
+        p.pounceT = 0;
         p.vx = -p.facing * 320;
         p.vy = -420;
         p.inv = Math.max(p.inv, 0.5);
@@ -733,9 +811,10 @@ export class Game {
         this.engage(b);
         p.vy = -760;
         sfx.stomp();
-      } else if (p.sprintT > 0) {
+      } else if (smashing(p)) {
         this.engage(b);
         p.sprintT = 0;
+        p.pounceT = 0;
         p.vx = -p.facing * 320;
         p.vy = -420;
         p.inv = Math.max(p.inv, 0.5);
@@ -753,6 +832,20 @@ export class Game {
     sfx.engage();
     this.toast('It loves the engagement! Buzz up.');
     this.burst(b.x + b.w / 2, b.y, 3, 'heart');
+  }
+
+  // Edna's audit stamp: smashes walls and flattens minions just in front of her
+  applyStamp(st) {
+    for (const w of this.walls) {
+      if (w.alive && overlap(st, { x: w.x * T, y: w.y * T, w: T, h: w.h * T })) this.breakWall(w.x, w.y);
+    }
+    for (const e of this.enemies) {
+      if (e.alive && overlap(st, e)) { this.defeat(e); sfx.stomp(); }
+    }
+    const b = this.boss;
+    if (b && b.active && !b.dead && overlap(st, b)) {
+      if (b.type === 'reindeer') this.engage(b); else this.damageBoss();
+    }
   }
 
   updateMissiles(dt) {
@@ -813,7 +906,7 @@ export class Game {
   // ---------- Damage and respawn ----------
   hurt(fromX) {
     const p = this.player;
-    if (p.inv > 0 || p.sprintT > 0 || p.dead > 0 || this.state !== 'play') return;
+    if (p.inv > 0 || smashing(p) || p.dead > 0 || this.state !== 'play') return;
     p.hp--;
     p.inv = 1.4;
     p.knock = 0.25;
@@ -832,6 +925,7 @@ export class Game {
     p.vy = -650;
     p.hp = 0;
     p.sprintT = 0;
+    p.pounceT = 0;
     this.stats.deaths++;
     sfx.die();
     this.burst(p.x + p.w / 2, Math.min(p.y, VH - 40), 12, 'dot');
@@ -841,6 +935,7 @@ export class Game {
     this.player = this.makePlayer(this.spawn);
     this.player.inv = 1.2;
     this.snacks = [];
+    this.stamps = [];
     this.missiles = [];
     this.waves = [];
     const b = this.boss;
@@ -1040,9 +1135,12 @@ export class Game {
     for (const s of this.snacks) {
       ctx.save();
       ctx.translate(s.x, s.y);
-      S.drawSnack(ctx, s.rot, 0.8);
+      if (s.type === 'pulse') S.drawPulse(ctx, s.age, s.dir);
+      else if (s.type === 'harp') S.drawHarpWave(ctx, s.age, s.dir);
+      else S.drawSnack(ctx, s.rot, 0.8);
       ctx.restore();
     }
+    for (const st of this.stamps) S.drawStamp(ctx, st);
     this.drawPlayer(ctx);
     this.drawParticles(ctx);
 
@@ -1156,7 +1254,9 @@ export class Game {
     if (p.dead <= 0 && p.inv > 0 && Math.floor(p.inv * 14) % 2) return;
     let state = 'idle';
     if (p.sprintT > 0) state = 'sprint';
+    else if (p.pounceT > 0) state = 'pounce';
     else if (p.gliding) state = 'glide';
+    else if (p.ski && !p.onGround && this.ch.abilities.airJumps.kind === 'ski') state = 'ski';
     else if (!p.onGround) state = p.vy < 0 ? 'jump' : 'fall';
     else if (Math.abs(p.vx) > 20) state = 'run';
     ctx.save();

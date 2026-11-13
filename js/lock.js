@@ -23,7 +23,7 @@ export function cyrb53(str, seed = 0) {
 const STOP = new Set([
   'the', 'a', 'an', 'his', 'her', 'its', 'it', 'is', 'i', 'think', 'my', 'of', 'and', 'with',
   'egg', 'food', 'favourite', 'favorite', 'please', 'obviously', 'definitely', 'probably', 'duh',
-  'he', 'likes', 'like', 'love', 'loves', 'tim', 'rex',
+  'he', 'she', 'likes', 'like', 'love', 'loves', 'tim', 'rex', 'biscuit', 'on',
 ]);
 
 // Turn whatever the player typed into a few candidate answers.

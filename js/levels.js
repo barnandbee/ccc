@@ -70,22 +70,13 @@ function level1() {
   b.plat(36, 9, 6).sparkRow(36, 8, 6);
   b.plat(43, 6, 4).secret(45, 5);
   b.cp(48);
-  b.sign(50, {
-    tim: 'Press X (or ★) to throw. Hold jump while falling to glide!',
-    rex: 'Press X (or ★) for a Keirin Sprint. It works mid-air too!',
-  });
+  b.sign(50, { hint: 'special' });
   b.enemy('walker', 52).enemy('walker', 54);
   b.sparkRow(51, 11, 3);
   b.cp(56);
-  b.sign(57, {
-    tim: 'A gloom wall! Throw three things at it to crack it.',
-    rex: 'A gloom wall! Sprint straight into it.',
-  });
+  b.sign(57, { hint: 'wall' });
   b.wall(59, 7, 5);
-  b.sign(64, {
-    tim: 'Too far to jump. Jump, then hold jump to glide across.',
-    rex: 'Too far to jump. Jump, then sprint in mid-air.',
-  });
+  b.sign(64, { hint: 'gap' });
   b.sparkRow(68, 9, 6, 1);
   b.ground(75, 110);
   b.block(80, 10, 3, 2).block(83, 8, 3, 4).sparkRow(83, 7, 3);
@@ -142,10 +133,7 @@ function level2() {
   // cupboard on the carriage roof: jump onto its lid to carry on, or smash in for the treasure
   b.block(131, 6, 3, 1).block(133, 7, 1, 2).wall(131, 7, 2).secret(132, 8);
   b.sparkRow(120, 8, 8);
-  b.sign(140, {
-    tim: 'Another long gap. Hold jump to glide!',
-    rex: 'Another long gap. Sprint in mid-air!',
-  });
+  b.sign(140, { hint: 'gap' });
   b.sparkRow(152, 9, 6);
   b.cp(162);
   b.enemy('flyer', 168, 7, { range: 2 }).enemy('flyer', 176, 6, { range: 3 });

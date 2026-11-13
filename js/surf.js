@@ -13,7 +13,7 @@ import { input } from './input.js';
 export const BONUS = 4;
 export const BONUS_NAME = 'Surf the Egg Nog Wave';
 const VW = 960, VH = 560, STEP = 1 / 120;
-const GRAV = 2100, JUMP_V = 780, GLIDE_FALL = 115;
+const GRAV = 2100, JUMP_V = 780;
 const PX = 260; // player's position across the screen
 const NOG = '#f3e2b3';
 const PX_PER_M = 40;
@@ -172,17 +172,22 @@ export class Surf {
     p.phase += dt * 6;
 
     // special moves
+    const ab = this.ch.abilities;
     if (sp) {
-      if (this.ch.abilities.throw && p.throwCD <= 0 && this.snacks.length < 3) {
-        this.snacks.push({ x: PX + 14, y: p.y - 46, vx: 620, vy: -220, rot: 0, life: 1.4 });
-        p.throwCD = 0.3;
-        p.throwAnim = 0.18;
-        sfx.throw();
+      // projectiles: prawns arc, magnet pulses and harp blasts fly straight
+      if (ab.projectile && p.throwCD <= 0 && this.snacks.length < 3) {
+        const arc = ab.projectile === 'snack';
+        this.snacks.push({ type: ab.projectile, x: PX + 14, y: p.y - (arc ? 46 : 30), vx: arc ? 620 : 680, vy: arc ? -220 : 0, rot: 0, life: 1.4, age: 0, arc });
+        p.throwCD = ab.projectile === 'harp' ? 0.45 : 0.3;
+        p.throwAnim = 0.2;
+        if (ab.projectile === 'harp') sfx.harp(); else if (ab.projectile === 'pulse') sfx.pulse(); else sfx.throw();
       }
-      if (this.ch.abilities.sprint && p.sprintCD <= 0) {
-        p.sprintT = 0.65;
-        p.sprintCD = 1.6;
-        sfx.sprint();
+      // sprint, charge, pounce or stamp all smash through hazards on the wave
+      if ((ab.sprint || ab.pounce || ab.stamp) && p.sprintCD <= 0) {
+        p.sprintT = ab.stamp ? 0.4 : 0.65;
+        p.sprintCD = ab.stamp ? 1.1 : 1.6;
+        p.throwAnim = ab.stamp ? 0.4 : 0;
+        if (ab.stamp) sfx.slam(); else sfx.sprint();
       }
     }
     if (p.sprintT > 0) {
@@ -196,6 +201,7 @@ export class Surf {
       p.y = surface;
       p.vy = 0;
       p.gliding = false;
+      p.airJumps = ab.airJumps?.count || 0;
       if (jp) {
         p.onBoard = false;
         p.vy = -JUMP_V;
@@ -203,12 +209,21 @@ export class Surf {
         this.splash(PX, surface, 6);
       }
     } else {
+      if (jp && p.airJumps > 0) {
+        // ski jump, wing flap or EBC Bounce
+        p.airJumps--;
+        p.vy = -ab.airJumps.vy;
+        p.fullRise = true;
+        if (ab.airJumps.kind === 'flap') sfx.flap(); else sfx.jump();
+        this.splash(PX, p.y, 3);
+      }
       let g = GRAV;
-      if (p.vy < 0 && !input.jump) g *= 2.4;
+      if (p.vy >= 0) p.fullRise = false;
+      if (p.vy < 0 && !input.jump && !p.fullRise) g *= 2.4;
       p.vy += g * dt;
       p.gliding = false;
-      if (this.ch.abilities.glide && input.jump && p.vy > 0) {
-        p.vy = Math.min(p.vy, GLIDE_FALL);
+      if (ab.glide && input.jump && p.vy > 0) {
+        p.vy = Math.min(p.vy, ab.glide);
         p.gliding = true;
       }
       p.y += p.vy * dt;
@@ -255,7 +270,8 @@ export class Surf {
 
     // thrown snacks
     for (const s of this.snacks) {
-      s.vy += 1100 * dt;
+      if (s.arc) s.vy += 1100 * dt;
+      s.age += dt;
       s.x += s.vx * dt;
       s.y += s.vy * dt;
       s.rot += dt * 14;
@@ -385,7 +401,9 @@ export class Surf {
     for (const s of this.snacks) {
       ctx.save();
       ctx.translate(s.x, s.y);
-      S.drawSnack(ctx, s.rot, 0.8);
+      if (s.type === 'pulse') S.drawPulse(ctx, s.age, 1);
+      else if (s.type === 'harp') S.drawHarpWave(ctx, s.age, 1);
+      else S.drawSnack(ctx, s.rot, 0.8);
       ctx.restore();
     }
 
@@ -500,7 +518,8 @@ export class Surf {
     D.ellipse(ctx, 0, -3, 40, 6, { fill: 'rgba(200,50,60,0.6)', amt: 0.5 });
     D.line(ctx, -32, -3, 32, -3, 0.4);
     let state = 'idle';
-    if (p.sprintT > 0) state = 'sprint';
+    const ab = this.ch.abilities;
+    if (p.sprintT > 0) state = ab.pounce ? 'pounce' : ab.stamp ? 'idle' : 'sprint';
     else if (p.gliding) state = 'glide';
     else if (!p.onBoard) state = p.vy < 0 ? 'jump' : 'fall';
     else if (this.charId === 'rex') state = 'run';
