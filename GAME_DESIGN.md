@@ -57,14 +57,14 @@ Early levels have generous checkpoints and respawning. Later levels add trickier
 ## Extras added later
 
 - **All-stars bonus**: collect every star in a level for +20% on that level's score.
-- **Baubles**: 20 awards for feats (first level, full run, every star, no hits, both bosses, surfing distances, playing as several characters and more), shown on a tree on the Baubles screen.
+- **Baubles**: 27 awards, for ringing in 2027, for feats (first level, full run, every star, no hits, both bosses, surfing distances, playing as several characters and more), shown on a tree on the Baubles screen.
 - **Music**: Festive carols or generated Avant Garde Acid Jazz (walking bass, swung ride, acid line, odd time signatures).
 - **Blue Monday** (#018) becomes playable after finishing the game as 3 different characters: Deadline Toss (lobbed tax forms) and Leap Day (a long mid-air leap).
 
 - **Blue Monday** is hidden completely until unlocked (no tile, no silhouette; his bauble shows as ???).
 - **A secret** in level 1, documented only in the code (`enterOffice` in js/game.js) so it stays a surprise for players reading this page.
 
-- **Intro**: a 20-second cutscene before a character's first level 1. Christmas News announces the Seasonal Spirit has gone, the character does a slow double take, January is shown draining the spirit, and the character sets off. Tap to skip scenes; replayable from How to play.
+- **Intro**: a 20-second cutscene before a character's first level 1. Christmas News announces the Seasonal Spirit has gone, Political Affairs Correspondent Wory Steward does a slow double take, January is shown draining the spirit, and the character sets off. Tap to skip scenes; replayable from How to play.
 - **Options & Stats**: one screen with tabs for Settings, Stats, Baubles, High scores, How to play and About (with the Bass Moultapps logo).
 - Made by **Bass Moultapps**.
 

@@ -26,6 +26,12 @@ export const AWARDS = [
   // a secret until earned: the name and description are hidden so Blue Monday stays a surprise
   { id: 'changed-sides', name: 'Changed Sides', desc: 'Blue Monday has joined your side.', secret: 'A surprise for finishing the game as 3 different characters.', test: (f) => f.mondayUnlocked },
   { id: 'ebenezer', name: 'Ebenezer', desc: 'Shut up shop for Christmas.', test: (f) => f.ebenezer },
+  { id: 'big-ten', name: 'Big Ten', desc: 'Score 10,000 or more across a full run.', test: (f) => f.bestRun >= 10000, progress: (f) => [f.bestRun, 10000] },
+  { id: 'black-wednesday', name: 'Black Wednesday', desc: 'Finish a level as Blue Monday.', secret: 'Some days are darker than others.', test: (f) => f.blackWednesday },
+  { id: 'gym-bunny', name: 'Gym Bunny', desc: 'Finish The Gym of Resolutions without taking a hit.', test: (f) => f.gymBunny },
+  { id: 'treasure-trove', name: 'Treasure Trove', desc: 'Find all 12 hidden treasures with one character.', test: (f) => Object.values(f.treasures).some((lv) => [0, 1, 2, 3].every((i) => (lv[i] || 0) >= 3)) },
+  { id: 'boxing-day', name: 'Boxing Day', desc: 'Play on Boxing Day.', test: (f) => f.boxingDay },
+  { id: 'ring-in-2027', name: 'Ring in 2027', desc: "Play on New Year's Day 2027.", test: (f) => f.newYear },
   { id: 'fully-decorated', name: 'Fully Decorated', desc: 'Earn every other bauble.', test: (f, earned) => AWARDS.every((a) => a.id === 'fully-decorated' || earned[a.id]) },
 ];
 
@@ -35,6 +41,7 @@ export function blankFacts() {
     fullRun: false, seasonSaved: false, allCards: false, allStars: false, allSecrets: false,
     noHit: false, speedy: false, reindeer: false, monday: false, board: false,
     dark: false, acid: false, mondayUnlocked: false, ebenezer: false,
+    bestRun: 0, blackWednesday: false, gymBunny: false, treasures: {}, boxingDay: false, newYear: false,
   };
 }
 
@@ -57,6 +64,10 @@ export function recordResult(facts, result, { charId, dark, acid, runDone, seaso
   if (dark) facts.dark = true;
   if (acid) facts.acid = true;
   if (runDone) facts.fullRun = true;
+  if (charId === 'monday') facts.blackWednesday = true;
+  if (result.level === 2 && result.hits === 0) facts.gymBunny = true;
+  const tr = (facts.treasures[charId] = facts.treasures[charId] || {});
+  tr[result.level] = Math.max(tr[result.level] || 0, result.secrets || 0);
   if (seasonSaved) facts.seasonSaved = true;
 }
 
@@ -75,4 +86,10 @@ export function checkAwards(facts, earned) {
     }
   }
   return fresh;
+}
+
+// Dates that earn baubles just for playing
+export function recordDate(facts, now = new Date()) {
+  if (now.getMonth() === 11 && now.getDate() === 26) facts.boxingDay = true;
+  if (now.getFullYear() === 2027 && now.getMonth() === 0 && now.getDate() === 1) facts.newYear = true;
 }

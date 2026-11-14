@@ -13,7 +13,7 @@ import * as Theme from './theme.js';
 import * as S from './sprites.js';
 import { submitScore, topScores, isShared } from './scores.js';
 import { shareImage, whatsappLink } from './share.js';
-import { AWARDS, blankFacts, recordResult, checkAwards } from './awards.js';
+import { AWARDS, blankFacts, recordResult, recordDate, checkAwards } from './awards.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -199,9 +199,9 @@ function paintCanvas(c, t) {
     for (const [l, y, r] of tiers) D.poly(ctx, [[l, y], [280, y - 130], [r, y]], { fill: 'rgba(76,175,106,0.25)' });
     D.rect(ctx, 262, 360, 36, 26, { fill: true });
     D.star(ctx, 280, 52, 20, { fill: 'rgba(241,200,75,0.8)', rot: Math.sin(t) * 0.1 });
-    // rows of hooks that sit inside each tier of the tree (7 + 5 + 5 + 4 = 21)
+    // rows of hooks that sit inside each tier of the tree (7 + 6 + 6 + 4 + 4 = 27)
     const slots = [];
-    const rows = [[0, 25, 7], [0, 65, 5], [1, 25, 5], [2, 30, 4]];
+    const rows = [[0, 22, 7], [0, 62, 6], [1, 22, 6], [1, 66, 4], [2, 28, 4]];
     for (const [tier, up, count] of rows) {
       const [l, base, r] = tiers[tier];
       const y = base - up;
@@ -212,7 +212,7 @@ function paintCanvas(c, t) {
       const [x, y] = slots[i % slots.length];
       ctx.save();
       ctx.translate(x, y);
-      ctx.scale(0.62, 0.62);
+      ctx.scale(0.56, 0.56);
       if (save.awards[a.id]) S.drawBauble(ctx, i, true, t);
       else { ctx.globalAlpha = 0.35; S.drawBauble(ctx, i, false, t); }
       ctx.restore();
@@ -345,6 +345,10 @@ function maybeUnlockMonday() {
   return true;
 }
 function refreshFacts() {
+  recordDate(save.facts);
+  for (const pr of Object.values(save.progress)) {
+    if (pr.lastRun) save.facts.bestRun = Math.max(save.facts.bestRun || 0, pr.lastRun.total);
+  }
   save.facts.allCards = ORDER.every((id) => CHARACTERS[id].unlockedBy || cards[id]);
   save.facts.mondayUnlocked = !!save.unlocked.monday;
 }
@@ -721,6 +725,7 @@ function onComplete(result) {
     }
     if (p.run.next >= LEVELS.length) {
       p.lastRun = { total: runTotal(p.run), submitted: false };
+      save.facts.bestRun = Math.max(save.facts.bestRun || 0, p.lastRun.total);
       p.run = null;
       runDone = true;
     }
