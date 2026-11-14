@@ -876,6 +876,16 @@ function drawCellarRoom(ctx) {
   D.circle(ctx, px + 22, py + 92, 44, { fill: 'rgba(224,122,208,0.35)' });
   D.text(ctx, '?', px, py + 94, 22);
   D.text(ctx, 'coming soon', px, py + 180, 20, { color: RED });
+  // graffiti, sprayed on the bricks
+  ctx.save();
+  ctx.translate(300, 300);
+  ctx.rotate(-0.12);
+  D.text(ctx, 'Lansbury 4 Eva', 0, 0, 44, { color: 'rgba(200,50,60,0.8)', sc: false });
+  ctx.restore();
+  D.pen(ctx, 'rgba(200,50,60,0.7)', 2);
+  for (const [dx, len] of [[-110, 22], [-62, 14], [-8, 28], [48, 12], [96, 20]]) D.line(ctx, 300 + dx, 318 - dx * 0.12, 300 + dx, 318 - dx * 0.12 + len, 0.3);
+  D.pen(ctx, 'rgba(200,50,60,0.75)', 2.2);
+  D.heart(ctx, 440, 270, 12);
 }
 
 export function drawBackground(ctx, theme, camX, VW) {

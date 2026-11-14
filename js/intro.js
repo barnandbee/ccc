@@ -136,7 +136,8 @@ export class Intro {
     this.studio(ctx, clock);
     if (t > 0.6) this.cue('sting', () => sfx.checkpoint());
     // presenter speech
-    if (t > 0.9) S.drawBubble(ctx, 'Good evening. Breaking news: the Seasonal Spirit has gone.', 440, 250, 300);
+    if (t > 0.9) S.drawBubble(ctx, 'Good evening. Breaking news: the Seasonal Spirit has gone.', 440, 210, 300);
+    this.nameStrap(ctx, 'ESPERANCE ST. MORSE', 'Christmas News Anchor', 428, 292, 320);
     // ticker along the bottom
     D.pen(ctx, D.INK, 2.4);
     D.rect(ctx, 0, 488, VW, 34, { fill: 'rgba(200,50,60,0.85)', amt: 0.6 });
@@ -177,12 +178,12 @@ export class Intro {
   }
 
   // news-style caption naming the correspondent
-  nameStrap(ctx) {
+  nameStrap(ctx, name = 'WORY STEWARD', role = 'Political Affairs Correspondent', y = 470, x = 40, w = 470) {
     D.pen(ctx, D.INK, 2.4);
-    D.rect(ctx, 40, 470, 470, 58, { fill: 'rgba(29,79,184,0.92)', amt: 0.5 });
-    D.rect(ctx, 40, 470, 12, 58, { fill: 'rgba(200,50,60,0.95)', amt: 0.3 });
-    D.text(ctx, 'WORY STEWARD', 70, 489, 24, { align: 'left', color: '#fff', sc: true });
-    D.text(ctx, 'Political Affairs Correspondent', 70, 513, 18, { align: 'left', color: '#fff' });
+    D.rect(ctx, x, y, w, 54, { fill: 'rgba(29,79,184,0.92)', amt: 0.5 });
+    D.rect(ctx, x, y, 12, 54, { fill: 'rgba(200,50,60,0.95)', amt: 0.3 });
+    D.text(ctx, name, x + 26, y + 18, 22, { align: 'left', color: '#fff', sc: true });
+    D.text(ctx, role, x + 26, y + 40, 17, { align: 'left', color: '#fff' });
   }
 
   why(ctx, t, clock) {
@@ -283,6 +284,39 @@ function presenter(ctx, x, y, t) {
   D.dot(ctx, x - 6, y - 94, 2);
   D.dot(ctx, x + 7, y - 94, 2);
   D.arc(ctx, x, y - 84, 6, 3, 0.2, Math.PI - 0.2, 0.2);
+  // Esperance St. Morse's elaborate festive hat
+  const hy = y - 110, bob = Math.sin(t * 2.5) * 1.5;
+  // great sweeping brim and crown
+  D.ellipse(ctx, x, hy, 44, 9, { fill: 'rgba(29,79,184,0.85)', rot: -0.08 });
+  D.poly(ctx, [[x - 20, hy - 2], [x - 16, hy - 28], [x + 16, hy - 30], [x + 22, hy - 2]], { fill: 'rgba(29,79,184,0.85)', amt: 0.4 });
+  // gold band with a bow
+  D.poly(ctx, [[x - 19, hy - 6], [x + 21, hy - 7], [x + 21, hy - 13], [x - 18, hy - 12]], { fill: 'rgba(241,200,75,0.95)', amt: 0.2 });
+  D.ellipse(ctx, x + 26, hy - 10, 7, 4, { rot: 0.6, fill: 'rgba(241,200,75,0.95)', amt: 0.2 });
+  D.ellipse(ctx, x + 26, hy - 3, 7, 4, { rot: -0.6, fill: 'rgba(241,200,75,0.95)', amt: 0.2 });
+  // holly and berries on the brim
+  for (const sg of [-1, 1]) D.ellipse(ctx, x - 26 + sg * 7, hy - 6, 8, 3.5, { rot: sg * 0.5, fill: 'rgba(76,175,106,0.75)', amt: 0.3 });
+  for (const dx of [-28, -24, -21]) D.dot(ctx, x + dx, hy - 9, 2.6, D.RED);
+  // two tall curling feathers
+  D.pen(ctx, D.RED, 2);
+  D.curve(ctx, [[x + 8, hy - 26], [x + 22, hy - 52 + bob], [x + 40, hy - 64 + bob], [x + 52, hy - 58 + bob]], 0.4);
+  for (let i = 1; i < 6; i++) {
+    const k = i / 6, fx = x + 8 + k * 44, fy = hy - 26 - Math.sin(k * 2.6) * 36 + bob;
+    D.line(ctx, fx, fy, fx + 6, fy - 7, 0.2);
+    D.line(ctx, fx, fy, fx - 4, fy - 8, 0.2);
+  }
+  D.pen(ctx, 'rgba(59,154,217,1)', 2);
+  D.curve(ctx, [[x - 4, hy - 28], [x - 14, hy - 54 + bob], [x - 30, hy - 66 + bob]], 0.4);
+  for (let i = 1; i < 5; i++) {
+    const k = i / 5, fx = x - 4 - k * 26, fy = hy - 28 - k * 38 + bob;
+    D.line(ctx, fx, fy, fx - 7, fy + 3, 0.2);
+    D.line(ctx, fx, fy, fx + 3, fy - 7, 0.2);
+  }
+  // a tiny Christmas tree perched on top, with a bauble dangling off the brim
+  D.pen(ctx, D.INK, 1.8);
+  D.poly(ctx, [[x - 8, hy - 30], [x, hy - 48 + bob], [x + 8, hy - 30]], { fill: 'rgba(76,175,106,0.75)', amt: 0.3 });
+  D.star(ctx, x, hy - 51 + bob, 4, { fill: D.GOLD });
+  D.line(ctx, x - 40, hy + 2, x - 42, hy + 16 + bob, 0.2);
+  D.circle(ctx, x - 42, hy + 20 + bob, 4, { fill: 'rgba(224,122,208,0.8)', amt: 0.2 });
 }
 
 // Wory Steward, Political Affairs Correspondent: tall and lanky, neat dark
