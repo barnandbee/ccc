@@ -64,6 +64,10 @@ Early levels have generous checkpoints and respawning. Later levels add trickier
 - **Blue Monday** is hidden completely until unlocked (no tile, no silhouette; his bauble shows as ???).
 - **A secret** in level 1, documented only in the code (`enterOffice` in js/game.js) so it stays a surprise for players reading this page.
 
+- **Intro**: a 20-second cutscene before a character's first level 1. Christmas News announces the Seasonal Spirit has gone, the character does a slow double take, January is shown draining the spirit, and the character sets off. Tap to skip scenes; replayable from How to play.
+- **Options & Stats**: one screen with tabs for Settings, Stats, Baubles, High scores, How to play and About (with the Bass Moultapps logo).
+- Made by **Bass Moultapps**.
+
 ## Collectibles
 
 - **Sparks of Seasonal Spirit**: biro stars, the main collectible.
@@ -71,7 +75,7 @@ Early levels have generous checkpoints and respawning. Later levels add trickier
 
 ## Finale and extras
 
-- End message: "Merry Christmas and a fabulous 2027", from Barnaby, Cass and Junie (puppy).
+- End message: "Merry Christmas and a fabulous 2027!"
 - A shareable image of the character and the player's score, for sending on WhatsApp.
 - High scores come only from a **full run**: start at level 1 and finish levels 1–4 in order (the bonus counts once, between 3 and 4). Restarting the current level is fine; playing any other level ends the run. Each finished run can be submitted once.
 - A shared high-score board through a free backend (Supabase or Firebase). Until that's configured, scores are stored locally.

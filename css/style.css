@@ -370,3 +370,47 @@ body.playing, body.playing #app { touch-action: none; }
 .char-tile.special { border-style: dashed; }
 .award .progress { height: 10px; margin: 4px 0 2px; padding: 1px; border-width: 1.5px; overflow: hidden; }
 .award .progress span { display: block; height: 100%; background: rgba(241, 200, 75, 0.85); border-radius: 6px; }
+
+/* ---------- Title logo ---------- */
+.logo { margin: 0.1em auto 0.2em; line-height: 0.95; text-align: center; font-weight: normal; transform: rotate(-2deg); }
+.logo > span { display: block; font-family: 'Lilita One', 'Patrick Hand SC', cursive; letter-spacing: 0.02em; }
+.logo-top, .logo-main {
+  color: #f1c84b;
+  -webkit-text-stroke: 3px var(--logo-ink, #14306f);
+  paint-order: stroke fill;
+  text-shadow: 0 2px 0 var(--logo-ink, #14306f), 0 4px 0 var(--logo-ink, #14306f), 0 6px 0 var(--logo-ink, #14306f), 0 9px 0 rgba(20, 48, 111, 0.35), 0 14px 18px rgba(0, 0, 0, 0.2);
+}
+.logo-top { font-size: clamp(1.7rem, 6vw, 3rem); color: #fff3cf; }
+.logo-main { font-size: clamp(3rem, 12.5vw, 6.4rem); margin-top: -0.06em; }
+.logo-ribbon { position: relative; display: inline-block !important; margin-top: 0.15em; }
+.logo-ribbon > span {
+  display: inline-block; position: relative; z-index: 1;
+  padding: 0.12em 0.9em 0.18em;
+  font-size: clamp(1.15rem, 4.2vw, 2rem); color: #fff;
+  background: #c8323c; border: 3px solid var(--logo-ink, #14306f); border-radius: 4px;
+  box-shadow: 0 5px 0 var(--logo-ink, #14306f);
+}
+.logo-ribbon::before, .logo-ribbon::after {
+  content: ''; position: absolute; top: 0.45em; width: 1.4em; height: 100%;
+  background: #9e2430; border: 3px solid var(--logo-ink, #14306f);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 30% 50%);
+}
+.logo-ribbon::before { left: -1em; }
+.logo-ribbon::after { right: -1em; transform: scaleX(-1); }
+:root[data-theme="dark"] { --logo-ink: #050a18; }
+
+/* ---------- Options & Stats ---------- */
+.tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 0 0 16px; }
+.tab { font: inherit; font-size: 1.15rem; color: var(--ink); background: transparent; border: 2px dashed var(--ink-soft); border-radius: var(--wobble2); padding: 0.2em 0.8em; cursor: pointer; }
+.tab.on { border: 2.5px solid var(--ink); background: var(--ink-soft); }
+.panel { margin-bottom: 16px; }
+#p-stats .stats-table td:last-child { text-align: right; }
+.char-stats ul { list-style: none; padding: 0; font-size: 1.15rem; }
+.char-stats h3 { margin: 14px 0 4px; }
+.maker-logo { width: min(220px, 60%); height: auto; border-radius: 50%; display: block; margin: 0 auto 10px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); }
+
+/* ---------- Intro ---------- */
+#s-intro { background: var(--bg); justify-content: center; padding: 0; z-index: 30; cursor: pointer; }
+#s-intro.active { display: flex; align-items: center; justify-content: center; }
+#introCanvas { display: block; }
+#s-intro .skip { position: absolute; top: max(10px, env(safe-area-inset-top)); right: max(10px, env(safe-area-inset-right)); background: var(--paper); }

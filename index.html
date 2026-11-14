@@ -11,8 +11,8 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Patrick+Hand&family=Patrick+Hand+SC&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=202611132120">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Lilita+One&family=Patrick+Hand&family=Patrick+Hand+SC&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=202611140002">
 </head>
 <body>
   <div id="app">
@@ -37,42 +37,91 @@
     <section class="screen paper" id="s-title">
       <div class="sheet center">
         <p class="kicker">Christmas 2026 presents</p>
-        <h1 class="title">Christmas Card Characters</h1>
-        <h2 class="subtitle">Save The Seasonal Spirit</h2>
+        <h1 class="logo" aria-label="Christmas Card Characters: Save The Seasonal Spirit">
+          <span class="logo-top">Christmas Card</span>
+          <span class="logo-main">Characters</span>
+          <span class="logo-ribbon"><span>Save The Seasonal Spirit</span></span>
+        </h1>
         <canvas class="portrait sized title-art" data-scene="title" width="560" height="220"></canvas>
         <div class="stack">
           <button class="btn primary big" data-go="select">Play</button>
-          <button class="btn" data-go="howto">How to play</button>
-          <button class="btn" data-go="scores">High scores</button>
-          <button class="btn" data-go="awards" id="awardsBtn">Baubles</button>
-          <button class="btn small" id="muteBtn">Sound: on</button>
-          <button class="btn small" id="musicBtn">Music: Festive</button>
-          <button class="btn small" id="themeBtn">Theme: auto</button>
+          <button class="btn" data-go="options">Options &amp; Stats</button>
         </div>
-        <p class="fine">With love from Barnaby, Cass &amp; Junie</p>
       </div>
     </section>
 
-    <!-- How to play -->
-    <section class="screen paper" id="s-howto">
-      <div class="sheet">
-        <h2 class="h">How to play</h2>
-        <div class="box sketch">
-          <p>January has come early, and it's draining the Seasonal Spirit out of Christmas. Run, jump and use your character's special move to get through four levels of January gloom, then face Blue Monday himself.</p>
-          <ul class="keys">
-            <li><b>Move:</b> ← → or A D. On a phone, slide a finger left or right.</li>
-            <li><b>Jump:</b> ↑, W, Space or Z. On a phone, flick up. Hold the key, or keep your finger down, to jump higher.</li>
-            <li><b>Special move:</b> X or Shift. On a phone, tap.</li>
-            <li>Prefer on-screen buttons? Pause the game and switch Controls to buttons.</li>
-            <li><b>Pause:</b> P or Esc</li>
-          </ul>
-          <p>Collect stars of Seasonal Spirit, find three hidden treasures in each level, and light the Christmas tree at the end. Jump on January's minions to cheer them up. If you run out of hearts, you'll go back to the last flag.</p>
-          <p>To get on the high-score board, do a full run: start at level 1 and finish all four levels in order. Restarting the level you're on is fine, but replaying an earlier level ends the run.</p>
-          <p>Each character is unlocked by a question about their Christmas card, so keep your card handy.</p>
+    <!-- Options & Stats -->
+    <section class="screen paper" id="s-options">
+      <div class="sheet center">
+        <h2 class="h">Options &amp; Stats</h2>
+        <div class="tabs" role="tablist">
+          <button class="tab" data-tab="settings">Settings</button>
+          <button class="tab" data-tab="stats">Stats</button>
+          <button class="tab" data-tab="awards" id="awardsBtn">Baubles</button>
+          <button class="tab" data-tab="scores">High scores</button>
+          <button class="tab" data-tab="howto">How to play</button>
+          <button class="tab" data-tab="about">About</button>
         </div>
+
+        <div class="panel" id="p-settings">
+          <div class="stack">
+            <button class="btn" id="muteBtn">Sound: on</button>
+            <button class="btn" id="musicBtn">Music: Festive</button>
+            <button class="btn" id="themeBtn">Theme: auto</button>
+            <button class="btn" id="optControls" hidden>Controls: swipe</button>
+          </div>
+        </div>
+
+        <div class="panel" id="p-stats">
+          <table class="stats-table" id="statsTable"></table>
+          <div id="charStats" class="char-stats"></div>
+        </div>
+
+        <div class="panel" id="p-awards">
+          <p class="lead" id="awardsCount"></p>
+          <canvas class="portrait sized award-tree" data-scene="awards" width="560" height="400"></canvas>
+          <div id="awardList" class="award-list"></div>
+        </div>
+
+        <div class="panel" id="p-scores">
+          <p class="lead" id="scoresNote"></p>
+          <ol id="scoreList" class="score-list"></ol>
+        </div>
+
+        <div class="panel" id="p-howto">
+          <div class="box sketch">
+            <p>January has come early, and it's draining the Seasonal Spirit out of Christmas. Run, jump and use your character's special move to get through four levels of January gloom, then face Blue Monday himself.</p>
+            <ul class="keys">
+              <li><b>Move:</b> ← → or A D. On a phone, slide a finger left or right.</li>
+              <li><b>Jump:</b> ↑, W, Space or Z. On a phone, flick up. Hold the key, or keep your finger down, to jump higher.</li>
+              <li><b>Special move:</b> X or Shift. On a phone, tap.</li>
+              <li>Prefer on-screen buttons? Switch Controls to buttons in Settings.</li>
+              <li><b>Pause:</b> P or Esc</li>
+            </ul>
+            <p>Collect stars of Seasonal Spirit, find three hidden treasures in each level, and light the Christmas tree at the end. Jump on January's minions to cheer them up. If you run out of hearts, you'll go back to the last flag.</p>
+            <p>To get on the high-score board, do a full run: start at level 1 and finish all four levels in order. Restarting the level you're on is fine, but replaying an earlier level ends the run.</p>
+            <p>Each character is unlocked by a question about their Christmas card, so keep your card handy.</p>
+          </div>
+          <button class="btn" id="replayIntro">Watch the intro again</button>
+        </div>
+
+        <div class="panel" id="p-about">
+          <img class="maker-logo" src="assets/bassmoultapps.jpg" alt="Bass Moultapps logo: a stained-glass peacock">
+          <p class="lead">Christmas Card Characters: Save The Seasonal Spirit<br>is made by <b>Bass Moultapps</b>.</p>
+          <p>Every character started life as a doodle on a Christmas card.</p>
+          <p class="fine">Carols are traditional and in the public domain. All drawings, sounds and acid jazz are made in code.</p>
+        </div>
+
         <button class="btn" data-go="title">Back</button>
       </div>
     </section>
+
+    <!-- Intro -->
+    <section class="screen" id="s-intro">
+      <canvas id="introCanvas" aria-label="Intro"></canvas>
+      <button class="btn small skip" id="skipIntro">Skip intro</button>
+    </section>
+
 
     <!-- Character select -->
     <section class="screen paper" id="s-select">
@@ -123,15 +172,6 @@
       </div>
     </section>
 
-    <!-- Story -->
-    <section class="screen paper" id="s-story">
-      <div class="sheet center">
-        <h2 class="h">Oh no!</h2>
-        <canvas class="portrait sized" data-scene="story" width="420" height="200"></canvas>
-        <div class="box sketch story" id="storyText"></div>
-        <button class="btn primary big" id="storyGo">Let's go!</button>
-      </div>
-    </section>
 
     <!-- Level complete -->
     <section class="screen dim" id="s-complete">
@@ -141,6 +181,7 @@
         <table class="stats-table" id="completeStats"></table>
         <p class="best" id="completeBest"></p>
         <div class="row">
+          <button class="btn" id="completeHome">Home</button>
           <button class="btn" id="completeLevels">Levels</button>
           <button class="btn" id="completeRetry">Replay</button>
           <button class="btn primary" id="completeNext">Next level</button>
@@ -160,6 +201,7 @@
           <button class="btn" id="pauseMusic">Music: Festive</button>
           <button class="btn" id="controlsBtn" hidden>Controls: swipe</button>
           <button class="btn" id="quitBtn">Quit to levels</button>
+          <button class="btn" id="quitHome">Quit to home</button>
         </div>
       </div>
     </section>
@@ -172,7 +214,6 @@
         <p class="lead" id="finaleVictory"></p>
         <div class="box sketch letter">
           <p class="script">Merry Christmas and a fabulous 2027!</p>
-          <p class="script">Love, Barnaby, Cass &amp; Junie <small>(woof)</small> x</p>
         </div>
         <p class="total">Full run score: <b id="finaleScore">0</b></p>
         <p class="lead" id="runNote"></p>
@@ -188,30 +229,12 @@
         <div class="row">
           <button class="btn" data-go="scores">High scores</button>
           <button class="btn" id="finaleLevels">Levels</button>
+          <button class="btn" data-go="title">Home</button>
         </div>
       </div>
     </section>
 
-    <!-- Awards -->
-    <section class="screen paper" id="s-awards">
-      <div class="sheet center">
-        <h2 class="h">Baubles</h2>
-        <p class="lead" id="awardsCount"></p>
-        <canvas class="portrait sized award-tree" data-scene="awards" width="560" height="400"></canvas>
-        <div id="awardList" class="award-list"></div>
-        <button class="btn" data-go="title">Back</button>
-      </div>
-    </section>
 
-    <!-- High scores -->
-    <section class="screen paper" id="s-scores">
-      <div class="sheet">
-        <h2 class="h">High scores</h2>
-        <p class="lead" id="scoresNote"></p>
-        <ol id="scoreList" class="score-list"></ol>
-        <button class="btn" data-go="title">Back</button>
-      </div>
-    </section>
 
     <!-- Rotate prompt -->
     <section class="screen dim" id="s-rotate">
@@ -225,25 +248,26 @@
   <script type="importmap" id="versions">
 {
   "imports": {
-    "./js/audio.js": "./js/audio.js?v=202611132120",
-    "./js/awards.js": "./js/awards.js?v=202611132120",
-    "./js/characters.js": "./js/characters.js?v=202611132120",
-    "./js/config.js": "./js/config.js?v=202611132120",
-    "./js/draw.js": "./js/draw.js?v=202611132120",
-    "./js/game.js": "./js/game.js?v=202611132120",
-    "./js/input.js": "./js/input.js?v=202611132120",
-    "./js/levels.js": "./js/levels.js?v=202611132120",
-    "./js/lock.js": "./js/lock.js?v=202611132120",
-    "./js/locks.js": "./js/locks.js?v=202611132120",
-    "./js/main.js": "./js/main.js?v=202611132120",
-    "./js/scores.js": "./js/scores.js?v=202611132120",
-    "./js/share.js": "./js/share.js?v=202611132120",
-    "./js/sprites.js": "./js/sprites.js?v=202611132120",
-    "./js/surf.js": "./js/surf.js?v=202611132120",
-    "./js/theme.js": "./js/theme.js?v=202611132120"
+    "./js/audio.js": "./js/audio.js?v=202611140002",
+    "./js/awards.js": "./js/awards.js?v=202611140002",
+    "./js/characters.js": "./js/characters.js?v=202611140002",
+    "./js/config.js": "./js/config.js?v=202611140002",
+    "./js/draw.js": "./js/draw.js?v=202611140002",
+    "./js/game.js": "./js/game.js?v=202611140002",
+    "./js/input.js": "./js/input.js?v=202611140002",
+    "./js/intro.js": "./js/intro.js?v=202611140002",
+    "./js/levels.js": "./js/levels.js?v=202611140002",
+    "./js/lock.js": "./js/lock.js?v=202611140002",
+    "./js/locks.js": "./js/locks.js?v=202611140002",
+    "./js/main.js": "./js/main.js?v=202611140002",
+    "./js/scores.js": "./js/scores.js?v=202611140002",
+    "./js/share.js": "./js/share.js?v=202611140002",
+    "./js/sprites.js": "./js/sprites.js?v=202611140002",
+    "./js/surf.js": "./js/surf.js?v=202611140002",
+    "./js/theme.js": "./js/theme.js?v=202611140002"
   }
 }
   </script>
-  <script type="module" src="js/main.js?v=202611132120"></script>
+  <script type="module" src="js/main.js?v=202611140002"></script>
 </body>
 </html>

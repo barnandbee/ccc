@@ -1,5 +1,7 @@
 # Christmas Card Characters: Save The Seasonal Spirit
 
+Made by Bass Moultapps.
+
 A hand-drawn Christmas platformer. January has come early, and the characters from this year's Christmas cards have to save the Seasonal Spirit.
 
 It's a plain web page with no build step, so it runs on GitHub Pages as-is. It works on phones (with touch buttons) and on computers (with the keyboard).
@@ -93,12 +95,13 @@ The public key is designed to be seen by anyone. Row level security limits it to
 | `js/game.js` | The platformer: physics, enemies, the two bosses, drawing |
 | `js/levels.js` | The four level layouts |
 | `js/surf.js` | Bonus level 3½: Surf the Egg Nog Wave |
-| `js/characters.js` | Tim, Rex and Junie, drawn in code |
+| `js/characters.js` | The characters, drawn in code |
 | `js/sprites.js` | January's minions, pickups, scenery and backgrounds |
 | `js/draw.js` | Wobbly biro drawing helpers |
 | `js/theme.js` | Light and dark themes: translates colours as they're drawn |
 | `js/audio.js` | Sound effects, carols (all public domain) and the generated Avant Garde Acid Jazz |
 | `js/lock.js`, `js/locks.js` | Passcode checking and the encrypted cards |
+| `js/intro.js` | The 20-second intro cutscene |
 | `js/awards.js` | Baubles: the awards and the rules for earning them |
 | `js/scores.js`, `js/config.js` | High scores |
 | `js/share.js` | The shareable "I saved Christmas" picture |

@@ -571,25 +571,3 @@ export const CHARACTERS = {
 // in card-number order
 export const ORDER = ['tim', 'clive', 'rinky', 'rex', 'satsuma', 'watson', 'edna', 'monday'];
 
-// Junie the puppy, for the finale
-export function drawJunie(ctx, t = 0) {
-  D.pen(ctx);
-  const wag = Math.sin(t * 12) * 0.5;
-  // tail
-  D.curve(ctx, [[-16, -14], [-24, -22 + wag * 6], [-26, -30 + wag * 8]], 0.5);
-  // body
-  D.ellipse(ctx, -4, -12, 15, 9, { fill: true });
-  // legs
-  for (const x of [-14, -8, 2, 8]) D.line(ctx, x, -5, x + (x % 4 ? 1 : -1), 0, 0.4);
-  // ears first, so the head sits over them
-  D.ellipse(ctx, 3, -20, 3.5, 7, { fill: D.INK, rot: 0.35, amt: 0.4 });
-  D.ellipse(ctx, 21, -20, 3.5, 7, { fill: D.INK, rot: -0.35, amt: 0.4 });
-  // head
-  D.circle(ctx, 12, -24, 10, { fill: true });
-  D.dot(ctx, 9, -26, 1.5);
-  D.dot(ctx, 15, -26, 1.5);
-  D.ellipse(ctx, 12, -20, 2.4, 1.6, { fill: D.INK, amt: 0.2 });
-  D.curve(ctx, [[9, -17], [12, -15], [15, -17]], 0.2);
-  // tongue
-  D.ellipse(ctx, 13, -14, 1.6, 2.4, { fill: D.RED, amt: 0.2 });
-}

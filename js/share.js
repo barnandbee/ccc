@@ -1,6 +1,6 @@
 // Builds a square "I saved Christmas" picture to share on WhatsApp and elsewhere.
 import * as D from './draw.js';
-import { CHARACTERS, drawJunie } from './characters.js';
+import { CHARACTERS } from './characters.js';
 
 export function gameUrl() {
   return location.href.split('#')[0].split('?')[0];
@@ -41,13 +41,7 @@ export function makeShareImage(charId, score) {
   ch.draw(ctx, { state: 'idle', t: 0.4 });
   ctx.restore();
 
-  ctx.save();
-  ctx.translate(830, 780);
-  ctx.scale(3.2, 3.2);
-  D.setPenScale(0.7);
-  drawJunie(ctx, 0.2);
   D.setPenScale(1);
-  ctx.restore();
 
   D.text(ctx, `I saved the Seasonal Spirit as`, 540, 830, 44);
   D.text(ctx, ch.name, 540, 890, 62, { sc: true });

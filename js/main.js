@@ -1,5 +1,6 @@
 // Screens, saving, unlocking and starting the game.
-import { CHARACTERS, ORDER, drawJunie } from './characters.js';
+import { CHARACTERS, ORDER } from './characters.js';
+import { Intro } from './intro.js';
 import { LOCKS } from './locks.js';
 import { tryUnlock, decrypt } from './lock.js';
 import { Game, VW, VH } from './game.js';
@@ -119,9 +120,12 @@ function showSwipeHint() {
 }
 
 function updateControlsLabel() {
-  $('#controlsBtn').hidden = !isTouch;
-  $('#controlsBtn').textContent = `Controls: ${save.controls === 'buttons' ? 'buttons' : 'swipe'}`;
+  for (const b of [$('#controlsBtn'), $('#optControls')]) {
+    b.hidden = !isTouch;
+    b.textContent = `Controls: ${save.controls === 'buttons' ? 'buttons' : 'swipe'}`;
+  }
 }
+$('#optControls').addEventListener('click', () => $('#controlsBtn').click());
 $('#controlsBtn').addEventListener('click', () => {
   save.controls = save.controls === 'buttons' ? 'swipe' : 'buttons';
   persist();
@@ -269,9 +273,9 @@ function paintCanvas(c, t) {
     const hop = Math.abs(Math.sin(t * 4)) * 22;
     drawCharAt(ctx, current, 290, 245 - hop, 2.1, { state: hop > 6 ? 'jump' : 'idle', t });
     ctx.save();
-    ctx.translate(450, 245);
-    ctx.scale(2, 2);
-    drawJunie(ctx, t);
+    ctx.translate(470, 250);
+    ctx.scale(1.3, 1.3);
+    S.drawTree(ctx, true, t + 1);
     ctx.restore();
     const cols = [D.RED, D.GOLD, '#3b9ad9', '#4caf6a'];
     for (let i = 0; i < 26; i++) {
@@ -379,7 +383,7 @@ function updateAwardsLabel() {
   const n = AWARDS.filter((a) => save.awards[a.id]).length;
   $('#awardsBtn').textContent = `Baubles (${n}/${AWARDS.length})`;
 }
-function openAwards() {
+function renderAwards() {
   const n = AWARDS.filter((a) => save.awards[a.id]).length;
   $('#awardsCount').textContent = `${n} of ${AWARDS.length} baubles on the tree.`;
   $('#awardList').innerHTML = AWARDS.map((a, i) => {
@@ -398,8 +402,6 @@ function openAwards() {
       <div><b>${esc(name)}</b><p>${esc(desc)}</p>${bar}${got ? `<small>Earned ${esc(when)}</small>` : ''}</div>
     </div>`;
   }).join('');
-  show('awards');
-  paintVisible();
 }
 // ---------- Theme ----------
 // 'auto' follows the phone or computer's dark-mode setting
@@ -464,7 +466,7 @@ const WRONG = [
   "Hmm, that's not what the card says.",
   'Not quite. Have a look at the card!',
   "Nope. It's written on your card, honest.",
-  'Still no. Maybe ask Cass?',
+  'Still no. Maybe ask whoever sent it?',
 ];
 function openUnlock(id) {
   unlockId = id;
@@ -519,7 +521,7 @@ function openCard(id) {
         <div class="card-head"><span>Your Christmas 2026 character</span><span class="num">${esc(ch.number)}</span></div>
         <div class="who">
           <div class="bubble sketch">Who is <b>${esc(ch.name)}</b>?</div>
-          <div class="asks">≡ asks Cass ≡<small>(and probably you, too)</small></div>
+          <div class="asks">≡ asks the card ≡<small>(and probably you, too)</small></div>
         </div>
         <div class="card-body">
           <canvas class="portrait" width="150" height="170" data-char="${id}" data-tone="${ch.cardTone}"></canvas>
@@ -606,19 +608,43 @@ function openLevels() {
 $('#levelsBack').addEventListener('click', () => openCard(current));
 $('#finaleReplay').addEventListener('click', () => openFinale());
 
-function openStory() {
-  const ch = CHARACTERS[current];
-  $('#storyText').innerHTML = `
-    <p>January has come early!</p>
-    <p>It's creeping through the Christmas holidays and draining the Seasonal Spirit out of everything. The leftovers have gone sad, the commute is back, the gym is full of resolutions, and Blue Monday is waiting in the tax office.</p>
-    <p>Only <b>${esc(ch.name)}</b> can light the Christmas trees and bring the Seasonal Spirit back.</p>`;
-  show('story');
-  paintVisible();
+// ---------- Intro ----------
+const intro = new Intro($('#introCanvas'));
+function playIntro(charId, then) {
+  show('intro');
+  sizeIntro();
+  A.playMusic('deck');
+  intro.play(charId, () => { $('#s-intro').classList.remove('active'); then(); });
 }
-$('#storyGo').addEventListener('click', () => {
-  save.seenStory[current] = true;
-  persist();
-  startLevel(0);
+function openStory() {
+  playIntro(current, () => {
+    save.seenStory[current] = true;
+    persist();
+    startLevel(0);
+  });
+}
+$('#s-intro').addEventListener('pointerdown', (e) => {
+  if (e.target.id === 'skipIntro') return;
+  intro.next();
+});
+$('#skipIntro').addEventListener('click', () => intro.finish());
+window.addEventListener('keydown', (e) => {
+  if (!intro.running) return;
+  if (e.code === 'Escape') intro.finish();
+  else if (['Space', 'Enter', 'ArrowRight', 'KeyX'].includes(e.code)) { e.preventDefault(); intro.next(); }
+});
+function sizeIntro() {
+  const c = $('#introCanvas');
+  const W = window.innerWidth, H = window.innerHeight;
+  let w = W, h = (W * VH) / VW;
+  if (h > H) { h = H; w = (H * VW) / VH; }
+  c.style.width = `${Math.floor(w)}px`;
+  c.style.height = `${Math.floor(h)}px`;
+  intro.resize(Math.floor(w), Math.floor(h), Math.min(2, window.devicePixelRatio || 1));
+}
+$('#replayIntro').addEventListener('click', () => {
+  const who = current || ORDER.find((id) => cards[id]) || 'tim';
+  playIntro(who, () => openOptions('howto'));
 });
 
 // ---------- Playing ----------
@@ -769,6 +795,8 @@ function onComplete(result) {
 $('#completeNext').addEventListener('click', (e) => { engine.stop(); beginLevel(Number(e.currentTarget.dataset.go)); });
 $('#completeRetry').addEventListener('click', () => { engine.stop(); beginLevel(lastResult.level); });
 $('#completeLevels').addEventListener('click', () => { engine.stop(); openLevels(); });
+$('#completeHome').addEventListener('click', () => { engine.stop(); openTitle(); });
+$('#quitHome').addEventListener('click', () => { engine.stop(); openTitle(); });
 
 // ---------- Finale ----------
 let finaleTotal = 0;
@@ -823,9 +851,46 @@ $('#shareBtn').addEventListener('click', async () => {
 });
 $('#finaleLevels').addEventListener('click', () => openLevels());
 
+// ---------- Options & Stats ----------
+let optionsTab = 'settings';
+function openOptions(tab = optionsTab) {
+  optionsTab = tab;
+  document.querySelectorAll('#s-options .tab').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
+  document.querySelectorAll('#s-options .panel').forEach((p) => { p.hidden = p.id !== `p-${tab}`; });
+  if (tab === 'awards') renderAwards();
+  if (tab === 'scores') renderScores();
+  if (tab === 'stats') renderStats();
+  show('options');
+  paintVisible();
+}
+document.querySelectorAll('#s-options .tab').forEach((b) => b.addEventListener('click', () => { A.sfx.click(); openOptions(b.dataset.tab); }));
+
+function renderStats() {
+  const f = save.facts;
+  const unlockedCount = ORDER.filter((id) => cards[id]).length;
+  const visible = ORDER.filter((id) => !CHARACTERS[id].unlockedBy || cards[id]).length;
+  const baubles = AWARDS.filter((a) => save.awards[a.id]).length;
+  const rows = [
+    ['Levels finished', f.levels],
+    ['Stars collected', f.stars],
+    ["January's minions cheered up", f.minions],
+    ['Best egg nog ride', `${f.surfBest} m`],
+    ['Characters unlocked', `${unlockedCount} / ${visible}`],
+    ['Characters played', f.chars.length],
+    ['Baubles', `${baubles} / ${AWARDS.length}`],
+  ];
+  $('#statsTable').innerHTML = rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(typeof v === 'number' ? v.toLocaleString('en-GB') : v)}</td></tr>`).join('');
+  const played = ORDER.filter((id) => cards[id] && save.progress[id]);
+  $('#charStats').innerHTML = played.length
+    ? `<h3>Best full runs</h3><ul>${played.map((id) => {
+      const r = save.progress[id].lastRun;
+      return `<li>${esc(CHARACTERS[id].name)}: ${r ? r.total.toLocaleString('en-GB') : 'no full run yet'}</li>`;
+    }).join('')}</ul>`
+    : '';
+}
+
 // ---------- High scores ----------
-async function openScores() {
-  show('scores');
+async function renderScores() {
   const list = $('#scoreList');
   list.innerHTML = '<li>Loading…</li>';
   const { shared, list: rows } = await topScores(10);
@@ -844,9 +909,8 @@ document.querySelectorAll('[data-go]').forEach((b) => {
     const go = b.dataset.go;
     if (go === 'title') openTitle();
     else if (go === 'select') openSelect();
-    else if (go === 'howto') show('howto');
-    else if (go === 'scores') openScores();
-    else if (go === 'awards') openAwards();
+    else if (go === 'options') openOptions();
+    else if (go === 'scores') openOptions('scores');
   });
 });
 $('#muteBtn').addEventListener('click', toggleMute);
@@ -880,6 +944,7 @@ function resize() {
   canvas.style.height = `${Math.floor(h)}px`;
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   game.resize(Math.floor(w), Math.floor(h), dpr);
+  if (intro.running) sizeIntro();
   surf.resize(Math.floor(w), Math.floor(h), dpr);
   checkRotate();
 }
