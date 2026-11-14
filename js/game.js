@@ -2,7 +2,7 @@
 import * as D from './draw.js';
 import { themeContext, paperTone } from './theme.js';
 import * as S from './sprites.js';
-import { LEVELS, OFFICE, T, ROWS, TILE } from './levels.js';
+import { LEVELS, OFFICE, CELLAR, T, ROWS, TILE } from './levels.js';
 import { CHARACTERS } from './characters.js';
 import { sfx, playMusic } from './audio.js';
 import { input } from './input.js';
@@ -136,7 +136,7 @@ export class Game {
     this.toasts = [];
     this.spawn = { x: L.start.x * T + T / 2, y: (L.start.y + 1) * T };
     this.player = this.makePlayer(this.spawn);
-    this.stats = { sparks: 0, secrets: 0, deaths: 0, hits: 0, total: this.sparks.length, enemies: 0, officeStars: 0 };
+    this.stats = { sparks: 0, secrets: 0, deaths: 0, hits: 0, total: this.sparks.length, enemies: 0, officeStars: 0, giant: 0 };
     this.cam = { x: clamp(this.spawn.x - VW / 3, 0, this.Wpx - VW) };
     this.state = 'play';
     this.endTimer = 0;
@@ -145,6 +145,9 @@ export class Game {
     this.shake = 0;
     this.activeSign = null;
     this.office = null;
+    this.cellar = null;
+    this.trap = { open: false, creaked: false };
+    this.trapSay = null;
     this.stash = null;
     this.doorPush = 0;
   }
@@ -303,6 +306,8 @@ export class Game {
     this.updateEnemies(dt);
     this.updateSnacks(dt);
     if (this.office) this.updateOffice(dt);
+    if (this.cellar) this.updateCellar(dt);
+    if (this.trapSay && (this.trapSay.life -= dt) <= 0) this.trapSay = null;
     for (const st of this.stamps) {
       st.life -= dt;
       if (st.life > 0.1) this.applyStamp(st);
@@ -359,6 +364,8 @@ export class Game {
     }
 
     if (sp && this.office && this.officeInteract()) sp = false;
+    if (sp && this.cellar && this.cellarInteract()) sp = false;
+    if (sp && this.trapVisible() && this.trapInteract()) sp = false;
     if (sp) {
       const proj = ab.projectile;
       if (proj && p.throwCD <= 0 && this.snacks.length < 3) {
@@ -477,6 +484,11 @@ export class Game {
     this.moveY(p, p.vy * dt);
     p.phase += Math.abs(p.vx) * dt * 0.06;
 
+    // dropping through the opened trap door
+    if (this.trap.open && !this.cellar && this.L.trapdoor && p.y > 12 * T + 10) {
+      const td = this.L.trapdoor, pcx0 = p.x + p.w / 2;
+      if (pcx0 > td.x * T && pcx0 < (td.x + td.w) * T) { this.enterCellar(); return; }
+    }
     if (p.y > VH + 60) { this.kill(); return; }
 
     // Walk into the far end of level 1 (having jumped the tree) to find a secret room;
@@ -855,11 +867,11 @@ export class Game {
   }
 
   // ---------- Ebenezer Scroop's Office (secret room) ----------
-  enterOffice() {
+  // swaps the current level for a secret room, keeping the level to come back to
+  enterRoom(O, spawnX) {
     const keep = ['L', 'cols', 'tiles', 'Wpx', 'sparks', 'secrets', 'cps', 'signs', 'walls', 'movers', 'enemies', 'exit', 'boss', 'gateClosed', 'spawn'];
     this.stash = Object.fromEntries(keep.map((k) => [k, this[k]]));
     this.stash.camX = this.cam.x;
-    const O = OFFICE;
     this.L = O;
     this.cols = O.width;
     this.tiles = O.tiles.slice();
@@ -870,25 +882,102 @@ export class Game {
     this.boss = null;
     this.gateClosed = false;
     const p = this.player;
-    p.x = 2 * T; p.y = 12 * T - p.h; p.vx = 0; p.vy = 0; p.ride = null; p.facing = 1;
-    this.spawn = { x: 2.5 * T, y: 12 * T };
+    p.x = spawnX; p.y = 12 * T - p.h; p.vx = 0; p.vy = 0; p.ride = null; p.facing = 1;
+    this.spawn = { x: spawnX + p.w / 2, y: 12 * T };
     this.cam.x = 0;
     this.banner = 3.5;
     this.activeSign = null;
-    this.office = { day: 20, ledger: false, candle: true, closed: false, ghost: 0, say: null, near: null };
     sfx.secret();
   }
 
-  exitOffice() {
+  exitRoom(x, facing) {
     const st = this.stash;
     for (const [k, v] of Object.entries(st)) if (k !== 'camX') this[k] = v;
     this.cam.x = st.camX;
     this.snacks = []; this.stamps = [];
     const p = this.player;
-    p.x = this.Wpx - 3 * T; p.y = 12 * T - p.h; p.vx = 0; p.vy = 0; p.facing = -1;
-    this.office = null;
+    p.x = x; p.y = 12 * T - p.h; p.vx = 0; p.vy = 0; p.facing = facing;
     this.stash = null;
     this.banner = 0;
+  }
+
+  enterOffice() {
+    this.enterRoom(OFFICE, 2 * T);
+    this.office = { day: 20, ledger: false, candle: true, closed: false, ghost: 0, say: null, near: null };
+  }
+
+  exitOffice() {
+    this.exitRoom(this.stash.Wpx - 3 * T, -1);
+    this.office = null;
+  }
+
+  // ---------- The trap door and the cellar under level 2 ----------
+  trapVisible() {
+    return !!(this.L.trapdoor && this.boss && this.boss.dead && !this.cellar && !this.office);
+  }
+
+  trapInteract() {
+    const td = this.L.trapdoor, p = this.player;
+    const pcx = p.x + p.w / 2;
+    if (this.trap.open || !p.onGround || pcx < td.x * T - 14 || pcx > (td.x + td.w) * T + 14) return false;
+    if (!this.trap.creaked) {
+      this.trap.creaked = true;
+      sfx.crack();
+      this.trapSay = { text: 'The floor creaks.', life: 2.5 };
+    } else {
+      this.trap.open = true;
+      for (let i = td.x; i < td.x + td.w; i++) { this.setTile(i, 12, TILE.EMPTY); this.setTile(i, 13, TILE.EMPTY); }
+      // whoever opens it falls straight in
+      p.x = (td.x + td.w / 2) * T - p.w / 2;
+      p.vx = 0;
+      p.sprintT = 0;
+      sfx.break();
+      this.burst(pcx, 12 * T, 10, 'debris');
+      this.trapSay = null;
+    }
+    return true;
+  }
+
+  enterCellar() {
+    this.enterRoom(CELLAR, 7 * T);
+    this.player.vy = 300;
+    this.player.y = 6 * T;
+    this.cellar = { got: this.stats.giant > 0, near: null };
+    this.burst(7 * T, 7 * T, 10, 'dust');
+  }
+
+  exitCellar() {
+    const td = this.stash.L.trapdoor;
+    this.exitRoom((td.x + td.w + 1) * T, 1);
+    this.cellar = null;
+    sfx.jump();
+  }
+
+  cellarInteract() {
+    const pcx = this.player.x + this.player.w / 2;
+    if (Math.abs(pcx - 3 * T) < 46) { this.exitCellar(); return true; }
+    if (Math.abs(pcx - 19.5 * T) < 60) {
+      this.toast('On The Venns: coming soon!');
+      sfx.click();
+      return true;
+    }
+    return false;
+  }
+
+  updateCellar() {
+    const c = this.cellar, p = this.player;
+    const pcx = p.x + p.w / 2;
+    c.near = Math.abs(pcx - 3 * T) < 46 ? 'climb the ladder' : Math.abs(pcx - 19.5 * T) < 60 ? 'read the poster' : null;
+    if (!c.got && Math.abs(pcx - 14 * T) < 60 && p.y + p.h > 12 * T - 160) {
+      c.got = true;
+      this.stats.giant = 1000;
+      sfx.secret();
+      sfx.win();
+      this.burst(14 * T, 9 * T, 50, 'confetti');
+      const name = this.card?.secret || 'treasure';
+      this.toast(`A GIANT ${name}! +1,000 points`);
+      this.hooks.onGiant?.();
+    }
   }
 
   officeObjects() {
@@ -1125,7 +1214,7 @@ export class Game {
     const timeBonus = Math.max(0, Math.round((this.L.par - time) * 5));
     const base = Math.max(0,
       s.sparks * 10 + s.secrets * 250 + 500 + timeBonus + s.enemies * 20 + (this.boss ? 1000 : 0) - s.deaths * 50)
-      + s.officeStars * 10;
+      + s.officeStars * 10 + s.giant;
     // every star collected: +20% on the level score
     const allStars = s.total > 0 && s.sparks >= s.total;
     const starBonus = allStars ? Math.round(base * 0.2) : 0;
@@ -1133,7 +1222,7 @@ export class Game {
       level: this.levelIndex, sparks: s.sparks, total: s.total, secrets: s.secrets,
       secretTotal: this.secrets.length, deaths: s.deaths, hits: s.hits, time, timeBonus, enemies: s.enemies,
       allStars, starBonus, base, score: base + starBonus, par: this.L.par, boss: this.boss?.type || null,
-      officeStars: s.officeStars,
+      officeStars: s.officeStars, giant: s.giant,
     };
   }
 
@@ -1315,9 +1404,15 @@ export class Game {
     }
     for (const st of this.stamps) S.drawStamp(ctx, st);
     if (this.office) this.drawOffice(ctx);
+    if (this.cellar) S.drawCellar(ctx, this.cellar, this.time, this.charId);
+    if (this.L.trapdoor && !this.office && !this.cellar && (this.trapVisible() || this.trap.open)) {
+      S.drawTrapdoor(ctx, this.L.trapdoor.x * T, 12 * T, this.L.trapdoor.w * T, this.trap.open);
+      if (this.trapSay) S.drawBubble(ctx, this.trapSay.text, (this.L.trapdoor.x + this.L.trapdoor.w / 2) * T, 12 * T - 70, 200);
+    }
     this.drawPlayer(ctx);
     this.drawParticles(ctx);
 
+    if (this.cellar && this.cellar.near) D.text(ctx, `X (or tap): ${this.cellar.near}`, VW / 2, 535, 20);
     if (this.office) {
       const o = this.office;
       if (o.say) S.drawBubble(ctx, o.say.text, clamp(o.say.x, 170, VW - 170), o.say.y, 300);
@@ -1546,8 +1641,9 @@ export class Game {
     if (this.banner > 0) {
       ctx.save();
       ctx.globalAlpha = Math.min(1, this.banner);
-      const by = this.office ? 90 : 0;
-      D.text(ctx, this.office ? 'A secret room!' : `Level ${this.levelIndex + 1}`, VW / 2, 180 - by, 30);
+      const room = this.office || this.cellar;
+      const by = room ? 90 : 0;
+      D.text(ctx, room ? 'A secret room!' : `Level ${this.levelIndex + 1}`, VW / 2, 180 - by, 30);
       D.text(ctx, this.L.name, VW / 2, 228 - by, 54, { sc: true });
       ctx.restore();
     }

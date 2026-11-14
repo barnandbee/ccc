@@ -100,7 +100,7 @@ export class Intro {
   }
 
   // the Christmas News studio, shared by scenes 1 and 2
-  studio(ctx, clock, { faceCam = false, freeze = false, noWory = false, woryLook = -1 } = {}) {
+  studio(ctx, clock, { faceCam = false, freeze = false, noWory = false, woryLook = 1, woryStare = 0 } = {}) {
     const ct = freeze ? 0 : clock;
     // back wall: big windows with city lights, like a late-night news set
     ctx.save();
@@ -124,19 +124,19 @@ export class Intro {
     D.line(ctx, 462, 440, 464, 420, 0.3);
     D.line(ctx, 498, 440, 496, 420, 0.3);
     // presenter, waving her script about
-    presenter(ctx, 200, 430, ct);
+    presenter(ctx, 420, 430, ct);
     // the selected character, on the panel
     const bob = freeze ? 0 : Math.sin(ct * 2) * 1;
-    this.character(ctx, 660, 432 + bob, 2.2, { state: 'idle', t: ct }, faceCam ? 1 : -1);
-    // the Political Affairs Correspondent, listening intently to the presenter
-    if (!noWory) wory(ctx, 410, 432, woryLook, 1);
+    this.character(ctx, 670, 432 + bob, 2.2, { state: 'idle', t: ct }, faceCam ? 1 : -1);
+    // the Political Affairs Correspondent, listening to the presenter on his right
+    if (!noWory) wory(ctx, 220, 432, woryLook, 1, woryStare);
   }
 
   news(ctx, t, clock) {
     this.studio(ctx, clock);
     if (t > 0.6) this.cue('sting', () => sfx.checkpoint());
     // presenter speech
-    if (t > 0.9) S.drawBubble(ctx, 'Good evening. Breaking news: the Seasonal Spirit has gone.', 220, 250, 300);
+    if (t > 0.9) S.drawBubble(ctx, 'Good evening. Breaking news: the Seasonal Spirit has gone.', 440, 250, 300);
     // ticker along the bottom
     D.pen(ctx, D.INK, 2.4);
     D.rect(ctx, 0, 488, VW, 34, { fill: 'rgba(200,50,60,0.85)', amt: 0.6 });
@@ -152,34 +152,26 @@ export class Intro {
   }
 
   doubleTake(ctx, t, clock) {
-    if (t < 3.3) {
-      // close-up on Wory Steward: the camera creeps in as his head slowly turns
-      // from the presenter round to the camera, eyes widening
-      const zoom = 1.6 + ease(t / 3.3) * 0.8;
+    if (t < 3.4) {
+      // close-up on Wory and the presenter: he looks away, then slowly turns
+      // and stares, strangely and at length, at the presenter in red
+      const zoom = 1.55 + ease(t / 3.4) * 0.55;
       ctx.save();
       ctx.translate(VW / 2, VH / 2 + 10);
       ctx.scale(zoom, zoom);
-      ctx.translate(-410, -360);
+      ctx.translate(-320, -360);
       this.studio(ctx, clock, { freeze: true, noWory: true });
-      const look = t < 0.9 ? -1 : t < 2.6 ? -1 + ease((t - 0.9) / 1.7) : 0;
-      const jolt = t > 2.6 && t < 2.8 ? -3 : 0;
-      wory(ctx, 410, 432 + jolt, look, 1, clamp01((t - 2.4) / 0.4));
+      const look = t < 1 ? -1 : t < 2.5 ? -1 + 2 * ease((t - 1) / 1.5) : 1;
+      const stare = clamp01((t - 2.3) / 0.6);
+      wory(ctx, 220 + stare * 6, 432, look, 1, stare);
       ctx.restore();
-      if (t > 2.6) {
-        this.cue('take', () => sfx.slam());
-        const k = clamp01((t - 2.6) / 0.25);
-        D.pen(ctx, D.INK, 3);
-        for (let i = 0; i < 6; i++) {
-          const a = -Math.PI / 2 + (i - 2.5) * 0.35;
-          D.line(ctx, VW / 2 + Math.cos(a) * 180, 120 + Math.sin(a) * 70, VW / 2 + Math.cos(a) * (180 + 50 * k), 120 + Math.sin(a) * (70 + 30 * k), 0.6);
-        }
-      }
+      if (t > 2.6) this.cue('take', () => sfx.slam());
       this.nameStrap(ctx);
     } else {
-      // cut to the wide shot: everyone frozen, staring down the camera
-      this.studio(ctx, clock, { faceCam: true, freeze: true, woryLook: 0 });
-      D.text(ctx, '...', 410, 250, 34);
-      D.text(ctx, '...', 660, 250, 34);
+      // cut to the wide shot: Wory still staring at her; everyone else frozen
+      this.studio(ctx, clock, { faceCam: true, freeze: true, woryLook: 1, woryStare: 1 });
+      D.text(ctx, '...', 420, 250, 34);
+      D.text(ctx, '...', 670, 250, 34);
       this.nameStrap(ctx);
     }
   }
@@ -297,47 +289,49 @@ function presenter(ctx, x, y, t) {
 // side-parted hair, suit and tie, and very expressive eyes.
 // look: -1 = looking left at the presenter, 0 = straight at the camera.
 // shock (0-1) widens the eyes for the double take.
-function wory(ctx, x, y, look = -1, s = 1, shock = 0) {
+// Wory Steward, Political Affairs Correspondent: tall and lanky, neat dark
+// side-parted hair, suit and tie, and very expressive eyes.
+// look: -1 = looking away to his right... er, our left; +1 = towards the presenter.
+// stare (0-1): the strange, unblinking stare of the double take.
+function wory(ctx, x, y, look = 1, s = 1, stare = 0) {
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(s, s);
   D.pen(ctx, D.INK, 2.3);
   // suit, very upright
   D.poly(ctx, [[-20, -96], [20, -96], [24, 0], [-24, 0]], { fill: 'rgba(29,79,184,0.8)' });
-  // shirt collar, light blue tie
   D.poly(ctx, [[-9, -96], [0, -80], [9, -96]], { fill: '#fff', amt: 0.3 });
   D.poly(ctx, [[0, -88], [-4, -80], [0, -50], [4, -80]], { fill: 'rgba(130,180,230,0.95)', amt: 0.2 });
-  // hands folded in front
   D.line(ctx, -18, -86, -6, -40, 0.4);
   D.line(ctx, 18, -86, 6, -40, 0.4);
   D.ellipse(ctx, 0, -38, 9, 5, { fill: true, amt: 0.3 });
-  // long neck
   D.line(ctx, -5, -96, -5, -106, 0.2);
   D.line(ctx, 5, -96, 5, -106, 0.2);
-  // long head; the features slide sideways as he turns
+  // the head leans in towards her as the stare sets in
+  ctx.translate(0, -106);
+  ctx.rotate(stare * 0.12);
+  ctx.translate(0, 106);
   const hy = -130, fx = look * 6;
   D.ellipse(ctx, 0, hy, 15, 25, { fill: true });
-  D.ellipse(ctx, -15 - look * 2, hy + 2, 3, 6, { amt: 0.2 });
+  if (look < 0.6) D.ellipse(ctx, -15 - look * 2, hy + 2, 3, 6, { amt: 0.2 });
   if (look > -0.6) D.ellipse(ctx, 15 - look * 2, hy + 2, 3, 6, { amt: 0.2 });
-  // neat dark hair with a side parting
   D.poly(ctx, [[-15, hy - 6], [-14, hy - 20], [-4, hy - 27], [10, hy - 26], [15, hy - 16], [14, hy - 8], [6, hy - 16], [-6 + fx, hy - 18]], { fill: 'rgba(29,79,184,0.9)', amt: 0.3 });
   D.line(ctx, -6 + fx, hy - 18, -4, hy - 26, 0.1);
-  // eyebrows, rising as the penny drops
-  const brow = 3 + shock * 4;
-  D.line(ctx, -10 + fx, hy - 6 - brow, -3 + fx, hy - 5 - brow, 0.2);
-  D.line(ctx, 3 + fx, hy - 5 - brow, 10 + fx, hy - 6 - brow, 0.2);
-  // eyes: whites with pupils that swing from the presenter to the lens
-  const er = 3.6 + shock * 1.6;
-  const pd = look * 2.2;
+  // eyebrows: one creeps up higher than the other
+  D.line(ctx, -10 + fx, hy - 9 - stare * 2, -3 + fx, hy - 8 - stare * 5, 0.2);
+  D.line(ctx, 3 + fx, hy - 8 - stare * 1, 10 + fx, hy - 9 - stare * 1, 0.2);
+  // eyes: wide, with tiny pinprick pupils fixed on her
+  const er = 3.6 + stare * 1.8;
+  const pd = look * (2.2 + stare * 1.4);
   D.circle(ctx, -6 + fx, hy - 1, er, { fill: '#fff', amt: 0.2 });
   D.circle(ctx, 6 + fx, hy - 1, er, { fill: '#fff', amt: 0.2 });
-  D.dot(ctx, -6 + fx + pd, hy - 1, 1.7 - shock * 0.4);
-  D.dot(ctx, 6 + fx + pd, hy - 1, 1.7 - shock * 0.4);
-  // nose: a profile line when side-on, a little hook when facing
-  if (look < -0.5) D.poly(ctx, [[-1 + fx, hy + 1], [-6 + fx, hy + 9], [-1 + fx, hy + 10]], { close: false, amt: 0.2 });
-  else D.poly(ctx, [[0 + fx, hy + 2], [-2 + fx, hy + 9], [2 + fx, hy + 10]], { close: false, amt: 0.2 });
-  // mouth: a polite line, then a small 'o'
-  if (shock > 0.5) D.ellipse(ctx, fx, hy + 16, 2.2, 3, { amt: 0.1 });
-  else D.line(ctx, -4 + fx, hy + 16, 4 + fx, hy + 16, 0.2);
+  D.dot(ctx, -6 + fx + pd, hy - 1, 1.7 - stare * 0.7);
+  D.dot(ctx, 6 + fx + pd, hy - 1, 1.7 - stare * 0.7);
+  // nose in profile, pointing the way he's looking
+  const nd = look < 0 ? -1 : 1;
+  if (Math.abs(look) > 0.5) D.poly(ctx, [[fx, hy + 1], [fx + nd * 6, hy + 9], [fx, hy + 10]], { close: false, amt: 0.2 });
+  else D.poly(ctx, [[fx, hy + 2], [fx - 2, hy + 9], [fx + 2, hy + 10]], { close: false, amt: 0.2 });
+  // mouth: a polite line that goes very slightly wonky
+  D.curve(ctx, [[-4 + fx, hy + 16], [fx, hy + 16 + stare * 1.5], [4 + fx, hy + 15 - stare * 1.5]], 0.1);
   ctx.restore();
 }

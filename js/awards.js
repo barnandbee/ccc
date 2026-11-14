@@ -30,8 +30,8 @@ export const AWARDS = [
   { id: 'black-wednesday', name: 'Black Wednesday', desc: 'Finish a level as Blue Monday.', secret: 'Some days are darker than others.', test: (f) => f.blackWednesday },
   { id: 'gym-bunny', name: 'Gym Bunny', desc: 'Finish The Gym of Resolutions without taking a hit.', test: (f) => f.gymBunny },
   { id: 'treasure-trove', name: 'Treasure Trove', desc: 'Find all 12 hidden treasures with one character.', test: (f) => Object.values(f.treasures).some((lv) => [0, 1, 2, 3].every((i) => (lv[i] || 0) >= 3)) },
-  { id: 'boxing-day', name: 'Boxing Day', desc: 'Play on Boxing Day.', test: (f) => f.boxingDay },
-  { id: 'ring-in-2027', name: 'Ring in 2027', desc: "Play on New Year's Day 2027.", test: (f) => f.newYear },
+  { id: 'everyone', name: 'All Together Now', desc: 'Unlock every character, hidden ones included.', secret: 'Unlock every character. Every single one.', test: (f) => f.everyone },
+  { id: 'treasure-i-land', name: 'Treasure, I Land', desc: 'Find a giant treasure.', secret: 'Some treasures are bigger than others.', test: (f) => f.giant },
   { id: 'fully-decorated', name: 'Fully Decorated', desc: 'Earn every other bauble.', test: (f, earned) => AWARDS.every((a) => a.id === 'fully-decorated' || earned[a.id]) },
 ];
 
@@ -41,7 +41,7 @@ export function blankFacts() {
     fullRun: false, seasonSaved: false, allCards: false, allStars: false, allSecrets: false,
     noHit: false, speedy: false, reindeer: false, monday: false, board: false,
     dark: false, acid: false, mondayUnlocked: false, ebenezer: false,
-    bestRun: 0, blackWednesday: false, gymBunny: false, treasures: {}, boxingDay: false, newYear: false,
+    bestRun: 0, blackWednesday: false, gymBunny: false, treasures: {}, everyone: false, giant: false, unlockedCount: 0, characterCount: 0,
   };
 }
 
@@ -88,8 +88,3 @@ export function checkAwards(facts, earned) {
   return fresh;
 }
 
-// Dates that earn baubles just for playing
-export function recordDate(facts, now = new Date()) {
-  if (now.getMonth() === 11 && now.getDate() === 26) facts.boxingDay = true;
-  if (now.getFullYear() === 2027 && now.getMonth() === 0 && now.getDate() === 1) facts.newYear = true;
-}

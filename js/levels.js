@@ -149,6 +149,8 @@ function level2() {
   b.plat(211, 8, 3).plat(226, 8, 3);
   b.end(232);
   b.boss = { type: 'reindeer', x: 228, gateX: 202, triggerX: 206, arenaX0: 202, arenaX1: 238 };
+  // a loose floorboard that only shows up once the influencer is gone
+  b.trapdoor = { x: 217, w: 2 };
   return { ...b, id: 2, name: 'The Back-to-Work Commute', theme: 2, paper: '#eceeeb', par: 180, difficulty: 1 };
 }
 
@@ -248,3 +250,13 @@ function office() {
 
 export const LEVELS = [level1(), level2(), level3(), level4()];
 export const OFFICE = office();
+
+// The cellar under the reindeer's platform
+function cellar() {
+  const b = new Builder(24);
+  b.ground(0, 23).block(0, 0, 1, 12).block(23, 0, 1, 12);
+  b.begin(12);
+  b.end(-10);
+  return { ...b, id: 'cellar', name: 'A secret cellar', theme: 6, paper: '#e9e4d6', par: 0, difficulty: 0, secretRoom: true };
+}
+export const CELLAR = cellar();

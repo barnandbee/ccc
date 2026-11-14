@@ -507,6 +507,47 @@ export function drawOffice(ctx, o, t) {
   ctx.restore();
 }
 
+// A loose floorboard: very faint until it's opened
+export function drawTrapdoor(ctx, x, y, w, open) {
+  if (open) {
+    ctx.fillStyle = 'rgba(8,12,24,0.85)';
+    ctx.fillRect(x + 2, y, w - 4, 80);
+    D.pen(ctx, INK, 2.2);
+    D.line(ctx, x, y, x - 10, y - 30, 0.5);
+    D.rect(ctx, x - 28, y - 34, 26, 36, { fill: true, amt: 0.5 });
+    return;
+  }
+  ctx.save();
+  ctx.globalAlpha = 0.45;
+  D.pen(ctx, INK, 1.4);
+  D.line(ctx, x + 4, y + 3, x + 4, y + 16, 0.3);
+  D.line(ctx, x + w - 4, y + 3, x + w - 4, y + 16, 0.3);
+  D.line(ctx, x + w / 2, y + 3, x + w / 2, y + 16, 0.3);
+  D.circle(ctx, x + w / 2 + 12, y + 9, 3, { amt: 0.2 });
+  ctx.restore();
+}
+
+// The cellar's ladder and its giant treasure
+export function drawCellar(ctx, c, t, charId) {
+  const T = 40;
+  D.pen(ctx, INK, 2.4);
+  const lx = 3 * T;
+  D.line(ctx, lx - 16, 480, lx - 14, -10, 0.6);
+  D.line(ctx, lx + 16, 480, lx + 14, -10, 0.6);
+  for (let y = 460; y > 0; y -= 32) D.line(ctx, lx - 15, y, lx + 15, y, 0.4);
+  D.text(ctx, 'up', lx, 20, 16);
+  if (!c.got) {
+    ctx.save();
+    ctx.translate(14 * T, 480 - 90 + Math.sin(t * 2) * 6);
+    ctx.scale(4.2, 4.2);
+    D.setPenScale(0.45);
+    drawTrinket(ctx, charId, t);
+    D.setPenScale(1);
+    ctx.restore();
+    D.text(ctx, 'GIANT!', 14 * T, 290, 22, { color: RED, sc: true });
+  }
+}
+
 // Clive-Bot's magnetic pulse
 export function drawPulse(ctx, age, dir) {
   ctx.save();
@@ -809,8 +850,37 @@ function drawOfficeRoom(ctx) {
   D.line(ctx, 560, 150, 540, 120, 0.5);
 }
 
+// The cellar: brick walls, a hanging bulb and a poster for another game
+function drawCellarRoom(ctx) {
+  ctx.save();
+  ctx.globalAlpha = 0.3;
+  D.pen(ctx, INK, 1.8);
+  for (let row = 0; row < 11; row++) {
+    const y = 30 + row * 40;
+    D.line(ctx, 40, y, 920, y, 1);
+    for (let x = 40 + (row % 2) * 40; x < 920; x += 80) D.line(ctx, x, y, x, y + 40, 0.6);
+  }
+  ctx.restore();
+  // bare bulb
+  D.pen(ctx, INK, 2);
+  D.line(ctx, 480, 0, 480, 110, 0.4);
+  D.circle(ctx, 480, 122, 12, { fill: 'rgba(241,200,75,0.6)' });
+  // the Venn diagram poster
+  const px = 780, py = 140;
+  D.pen(ctx, INK, 2.4);
+  D.rect(ctx, px - 90, py - 20, 180, 230, { fill: true });
+  D.dot(ctx, px, py - 14, 3, RED);
+  D.text(ctx, 'On The Venns', px, py + 14, 24, { sc: true });
+  D.pen(ctx, INK, 2.2);
+  D.circle(ctx, px - 22, py + 92, 44, { fill: 'rgba(59,154,217,0.35)' });
+  D.circle(ctx, px + 22, py + 92, 44, { fill: 'rgba(224,122,208,0.35)' });
+  D.text(ctx, '?', px, py + 94, 22);
+  D.text(ctx, 'coming soon', px, py + 180, 20, { color: RED });
+}
+
 export function drawBackground(ctx, theme, camX, VW) {
   if (theme === 5) { drawOfficeRoom(ctx); return; }
+  if (theme === 6) { drawCellarRoom(ctx); return; }
   ctx.save();
   ctx.globalAlpha = 0.3;
   D.pen(ctx, INK, 2);

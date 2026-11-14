@@ -13,7 +13,7 @@ import * as Theme from './theme.js';
 import * as S from './sprites.js';
 import { submitScore, topScores, isShared } from './scores.js';
 import { shareImage, whatsappLink } from './share.js';
-import { AWARDS, blankFacts, recordResult, recordDate, checkAwards } from './awards.js';
+import { AWARDS, blankFacts, recordResult, checkAwards } from './awards.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -72,7 +72,7 @@ let pausedForRotate = false;
 const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 
 const canvas = $('#game');
-const game = new Game(canvas, { onComplete, onPause: pauseGame, onOfficeDone });
+const game = new Game(canvas, { onComplete, onPause: pauseGame, onOfficeDone, onGiant });
 const surf = new Surf(canvas, { onComplete, onPause: pauseGame });
 let engine = game; // whichever is running: the platformer or the bonus surf level
 if (DEV) window.__surf = surf;
@@ -332,6 +332,12 @@ function onOfficeDone() {
   persist();
 }
 
+function onGiant() {
+  save.facts.giant = true;
+  awardCheck();
+  persist();
+}
+
 // ---------- Awards (baubles) ----------
 // Characters (other than Blue Monday) who have finished the game
 function completions() {
@@ -345,12 +351,14 @@ function maybeUnlockMonday() {
   return true;
 }
 function refreshFacts() {
-  recordDate(save.facts);
   for (const pr of Object.values(save.progress)) {
     if (pr.lastRun) save.facts.bestRun = Math.max(save.facts.bestRun || 0, pr.lastRun.total);
   }
   save.facts.allCards = ORDER.every((id) => CHARACTERS[id].unlockedBy || cards[id]);
   save.facts.mondayUnlocked = !!save.unlocked.monday;
+  save.facts.unlockedCount = ORDER.filter((id) => cards[id]).length;
+  save.facts.characterCount = ORDER.length;
+  save.facts.everyone = save.facts.unlockedCount >= ORDER.length;
 }
 const toastQueue = [];
 let toastBusy = false;
@@ -790,6 +798,7 @@ function onComplete(result) {
     <tr><td>Tree lit</td><td></td><td>500</td></tr>
     ${result.boss ? '<tr><td>Boss beaten</td><td></td><td>1000</td></tr>' : ''}
     <tr><td>Tumbles</td><td>${result.deaths}</td><td>${result.deaths ? -result.deaths * 50 : 0}</td></tr>
+    ${result.giant ? `<tr class="bonus-row"><td>★ A giant discovery</td><td></td><td>${result.giant.toLocaleString('en-GB')}</td></tr>` : ''}
     ${result.officeStars ? `<tr class="bonus-row"><td>★ A secret reward</td><td>+${result.officeStars}</td><td>${result.officeStars * 10}</td></tr>` : ''}
     ${result.allStars ? `<tr class="bonus-row"><td>★ Every star! Bonus</td><td>+20%</td><td>${result.starBonus.toLocaleString('en-GB')}</td></tr>` : ''}
     <tr class="total"><td>Score</td><td></td><td>${result.score.toLocaleString('en-GB')}</td></tr>`;
