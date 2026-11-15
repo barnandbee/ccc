@@ -435,6 +435,62 @@ export function drawMonday(ctx, p = {}) {
   D.dot(ctx, 8, -64 + bob, 1.8);
 }
 
+
+// Scales Merckx: a haddock in good knitwear, on cowboy-booted tail fins
+export function drawScales(ctx, p = {}) {
+  const st = p.state || 'idle', t = p.t || 0, ph = p.phase || 0;
+  const run = st === 'run', dash = st === 'sprint';
+  ctx.save();
+  if (dash) { ctx.translate(0, -24); ctx.rotate(-Math.PI / 2 + 0.15); ctx.translate(0, 24); }
+  const bob = run ? -Math.abs(Math.sin(ph)) * 2 : st === 'idle' ? Math.sin(t * 2.4) * 0.7 : 0;
+  D.pen(ctx);
+  // tail split into two legs in cowboy boots with spurs
+  const sw = run ? Math.sin(ph) * 6 : 0;
+  for (const [hx, f] of [[-4, -sw], [5, sw]]) {
+    D.line(ctx, hx, -14 + bob, hx + f, -7, 0.3);
+    D.poly(ctx, [[hx + f - 4, -9], [hx + f + 2, -9], [hx + f + 2, -4], [hx + f + 7, -3], [hx + f + 7, 0], [hx + f - 4, 0]], { fill: 'rgba(120,70,40,0.7)', amt: 0.3 });
+    D.star(ctx, hx + f - 6, -2, 2.6, { amt: 0.1 });
+  }
+  // body in a cable-knit Arran jumper
+  D.ellipse(ctx, 0, -27 + bob, 12, 15, { fill: 'rgba(240,230,205,0.95)' });
+  D.pen(ctx, INK, 1.4);
+  for (const cx of [-5, 5]) D.zigzag(ctx, cx, -38 + bob, cx, -16 + bob, 1.6, 6);
+  D.line(ctx, -9, -18 + bob, 9, -18 + bob, 0.2);
+  D.pen(ctx);
+  // fins as arms; one holds the 2027 sign, the other a sparkler
+  if (!dash) {
+    D.poly(ctx, [[10, -31 + bob], [20, -40 + bob], [18, -30 + bob]], { fill: true, amt: 0.2 });
+    // a little 2027 calendar: binder rings, a red header and the year
+    D.rect(ctx, 15, -58 + bob, 18, 18, { fill: true, amt: 0.3 });
+    D.rect(ctx, 15, -58 + bob, 18, 5, { fill: 'rgba(200,50,60,0.8)', amt: 0.2 });
+    for (const rx of [19, 24, 29]) D.line(ctx, rx, -60 + bob, rx, -56 + bob, 0.1);
+    D.text(ctx, '2027', 24, -48 + bob, 5.5);
+    for (const gx of [18, 22, 26, 30]) D.dot(ctx, gx, -44 + bob, 0.6);
+    D.poly(ctx, [[-10, -31 + bob], [-19, -38 + bob], [-17, -28 + bob]], { fill: true, amt: 0.2 });
+    D.line(ctx, -18, -36 + bob, -24, -50 + bob, 0.2);
+    if (Math.sin(t * 9) > -0.4) for (let i = 0; i < 5; i++) {
+      const a = t * 4 + i * 1.3;
+      D.line(ctx, -24, -50 + bob, -24 + Math.cos(a) * 5, -50 + bob + Math.sin(a) * 5, 0.1);
+    }
+  } else {
+    // backstroke: arms windmilling
+    const a = t * 18;
+    D.line(ctx, -8, -32, -8 + Math.cos(a) * 14, -32 + Math.sin(a) * 14, 0.3);
+    D.line(ctx, 8, -32, 8 - Math.cos(a) * 14, -32 - Math.sin(a) * 14, 0.3);
+  }
+  // fishy head: big eye, the haddock's dark thumbprint, and fat lips
+  const hy = -50 + bob;
+  D.poly(ctx, [[-9, hy + 8], [-11, hy - 4], [-2, hy - 12], [9, hy - 8], [13, hy + 2], [9, hy + 9]], { fill: true });
+  D.poly(ctx, [[-11, hy - 4], [-2, hy - 12], [4, hy - 10], [-4, hy - 4]], { fill: 'rgba(29,79,184,0.85)', amt: 0.3 });
+  D.circle(ctx, 4, hy - 1, 4.2, { fill: true, amt: 0.2 });
+  D.dot(ctx, 5, hy - 1, 1.8);
+  D.ellipse(ctx, -4, hy + 2, 2.2, 2.8, { fill: INK, amt: 0.2 });
+  D.ellipse(ctx, 12, hy + 4, 3, 2, { fill: true, amt: 0.2 });
+  D.ellipse(ctx, 12, hy + 7, 3, 2, { fill: true, amt: 0.2 });
+  D.arc(ctx, -2, hy + 3, 6, 6, -0.8, 0.8, 0.2);
+  ctx.restore();
+}
+
 export const CHARACTERS = {
   tim: {
     id: 'tim',
@@ -537,6 +593,18 @@ export const CHARACTERS = {
     speed: 235, accel: 2100, friction: 2400, airControl: 0.8,
     abilities: { stamp: true, airJumps: { count: 1, vy: 720, kind: 'bounce', boost: 1.35 } },
   },
+  scales: {
+    id: 'scales', number: '#337', name: 'Scales Merckx', first: 'Scales',
+    question: "What is Scales Merckx's favourite sea?",
+    cardTone: 'kraft', draw: drawScales,
+    hints: {
+      special: 'Press X (or ★) for an 85 mph backstroke dash. Press jump again in mid-air to backflip!',
+      wall: 'A gloom wall! Backstroke straight into it.',
+      gap: 'Too far to jump. Jump, then dash across in mid-air.',
+    },
+    speed: 255, accel: 2100, friction: 2300, airControl: 0.8,
+    abilities: { sprint: true, airJumps: { count: 1, vy: 640, kind: 'flip' } },
+  },
   // Unlocked by finishing the game as 3 different characters, not by a passcode,
   // so his card details are public
   monday: {
@@ -569,5 +637,5 @@ export const CHARACTERS = {
 };
 
 // in card-number order
-export const ORDER = ['tim', 'clive', 'rinky', 'rex', 'satsuma', 'watson', 'edna', 'monday'];
+export const ORDER = ['tim', 'clive', 'rinky', 'rex', 'satsuma', 'watson', 'scales', 'edna', 'monday'];
 

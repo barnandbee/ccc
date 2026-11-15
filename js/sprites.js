@@ -328,6 +328,15 @@ function drawTreasure(ctx, kind, t) {
     D.circle(ctx, 0, 0, 11, { fill: 'rgba(245,150,40,0.85)' });
     D.ellipse(ctx, 4, -12, 5, 2.5, { rot: -0.4, fill: 'rgba(76,175,106,0.7)', amt: 0.2 });
     D.dot(ctx, -3, -3, 1, '#fff');
+  } else if (kind === 'scales') {
+    // a knitted Arran sweater
+    D.poly(ctx, [[-8, -14], [8, -14], [16, -8], [20, 4], [13, 6], [11, -2], [11, 14], [-11, 14], [-11, -2], [-13, 6], [-20, 4], [-16, -8]], { fill: 'rgba(240,230,205,0.95)', amt: 0.3 });
+    D.arc(ctx, 0, -14, 6, 3, 0, Math.PI, 0.1);
+    D.pen(ctx, INK, 1.2);
+    for (const cx of [-5, 5]) D.zigzag(ctx, cx, -9, cx, 12, 1.6, 6);
+    D.zigzag(ctx, 0, -9, 0, 12, 2.6, 4);
+    D.line(ctx, -11, 11, 11, 11, 0.2);
+    D.pen(ctx, INK, 2);
   } else if (kind === 'monday') {
     // a Friday off
     D.rect(ctx, -12, -14, 24, 28, { fill: true, amt: 0.4 });

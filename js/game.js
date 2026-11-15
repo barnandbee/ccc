@@ -157,7 +157,7 @@ export class Game {
       x: sp.x - 14, y: sp.y - 54, w: 28, h: 54, vx: 0, vy: 0,
       onGround: false, facing: 1, coyote: 0, jumpBuf: 0, hp: 3, inv: 0, knock: 0,
       sprintT: 0, sprintCD: 0, throwCD: 0, throwAnim: 0, gliding: false, dead: 0,
-      airJumpsLeft: 0, ski: false, fullRise: false, pounceT: 0, pounceCD: 0, pouncedAir: false, stampCD: 0,
+      flipT: 0, airJumpsLeft: 0, ski: false, fullRise: false, pounceT: 0, pounceCD: 0, pouncedAir: false, stampCD: 0,
       phase: 0, ride: null, groundTile: 0, canRide: true,
     };
   }
@@ -350,6 +350,7 @@ export class Game {
     p.sprintCD -= dt;
     p.throwCD -= dt;
     p.throwAnim -= dt;
+    p.flipT = Math.max(0, (p.flipT || 0) - dt);
     if (jp) p.jumpBuf = BUFFER; else p.jumpBuf -= dt;
     if (p.onGround) p.coyote = COYOTE; else p.coyote -= dt;
     let dir = (input.right ? 1 : 0) - (input.left ? 1 : 0);
@@ -457,6 +458,7 @@ export class Game {
           p.vx = (dir || p.facing) * ch.speed * aj.boost;
         }
         if (aj.kind === 'flap') sfx.flap(); else sfx.jump();
+        if (aj.kind === 'flip') p.flipT = 0.5;
         this.burst(p.x + p.w / 2, p.y + p.h, aj.kind === 'flap' ? 3 : 5, 'dust');
       }
       let g = GRAV;
@@ -1548,6 +1550,12 @@ export class Game {
       ctx.translate(0, 30);
     }
     ctx.scale(p.facing * 1.3, 1.3);
+    if (p.flipT > 0 && !p.onGround) {
+      // Scales Merckx's backflip: one full turn backwards around his middle
+      ctx.translate(0, -28);
+      ctx.rotate(-(1 - p.flipT / 0.5) * Math.PI * 2);
+      ctx.translate(0, 28);
+    }
     if (state === 'sprint') {
       D.pen(ctx, D.INK, 2);
       for (let i = 0; i < 4; i++) D.line(ctx, -24 - i * 6, -40 + i * 10, -50 - i * 8, -40 + i * 10, 0.5);

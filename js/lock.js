@@ -40,6 +40,8 @@ export function candidates(input) {
   const toks = [];
   for (let w of words) {
     if (w.length > 3 && w.endsWith('s') && !w.endsWith('ss')) w = w.slice(0, -1);
+    // British and American spellings: tranquillity / tranquility
+    if (w.includes('ll')) toks.push(w.replace(/ll/g, 'l'));
     if (STOP.has(w)) continue;
     toks.push(w);
     for (const aff of ['hard', 'soft']) {
