@@ -574,6 +574,28 @@ export function drawCellar(ctx, c, t, charId) {
   }
 }
 
+// A glittery flamingo ornament on a little round plinth
+export function drawFlamingo(ctx, t, gold) {
+  const col = gold ? 'rgba(230,185,60,0.9)' : 'rgba(200,205,215,0.95)';
+  D.pen(ctx, INK, 2);
+  D.ellipse(ctx, 0, -6, 18, 7, { fill: col, amt: 0.3 });
+  D.line(ctx, -3, -10, -4, -46, 0.3);
+  D.line(ctx, 4, -10, 6, -46, 0.3);
+  D.ellipse(ctx, 0, -56, 18, 12, { fill: col, rot: -0.15 });
+  D.curve(ctx, [[-12, -60], [-16, -78], [-8, -94], [-2, -96]], 0.3);
+  D.curve(ctx, [[-6, -60], [-10, -78], [-4, -90], [0, -92]], 0.3);
+  D.circle(ctx, -4, -96, 6, { fill: col, amt: 0.2 });
+  D.poly(ctx, [[-10, -96], [-16, -90], [-12, -86]], { fill: INK, amt: 0.1 });
+  D.dot(ctx, -4, -97, 1.2);
+  // glitter that twinkles
+  for (let i = 0; i < 9; i++) {
+    const on = Math.sin(t * 6 + i * 2.1) > 0.3;
+    if (!on) continue;
+    const gx = -14 + D.hash(i * 3 + (gold ? 1 : 2)) * 30, gy = -100 + D.hash(i * 7 + (gold ? 5 : 9)) * 96;
+    D.star(ctx, gx, gy, 2.6, { fill: '#fff', amt: 0.1 });
+  }
+}
+
 // Clive-Bot's magnetic pulse
 export function drawPulse(ctx, age, dir) {
   ctx.save();
@@ -738,7 +760,29 @@ function bgPiece(ctx, theme, k, x) {
   const r = D.hash(k * 977 + theme * 31);
   const y0 = 470;
   if (theme === 1) {
-    if (r < 0.33) {
+    if (k === 7) {
+      // a film poster billboard: Christmas Hippo 2
+      ctx.globalAlpha = 0.85;
+      D.line(ctx, x + 70, 330, x + 70, y0);
+      D.line(ctx, x + 220, 330, x + 220, y0);
+      D.rect(ctx, x + 10, 110, 270, 220, { fill: 'rgba(140,190,230,0.45)' });
+      D.text(ctx, 'CHRISTMAS HIPPO 2', x + 145, 136, 22, { sc: true });
+      D.text(ctx, 'The Hipponing', x + 145, 162, 20, { color: RED });
+      // the hippo, roaring, with holly on its back
+      const hx = x + 140, hy = 270;
+      D.ellipse(ctx, hx + 18, hy, 46, 30, { fill: 'rgba(120,80,60,0.75)' });
+      for (const lx of [-16, 0, 30, 46]) D.rect(ctx, hx + lx, hy + 20, 10, 22, { fill: 'rgba(120,80,60,0.75)', amt: 0.3 });
+      D.ellipse(ctx, hx - 32, hy - 6, 24, 20, { fill: 'rgba(120,80,60,0.75)' });
+      D.poly(ctx, [[hx - 56, hy - 4], [hx - 30, hy + 2], [hx - 56, hy + 16]], { fill: 'rgba(200,50,60,0.9)', amt: 0.3 });
+      for (const tx of [-52, -44]) { D.line(ctx, hx + tx, hy - 3, hx + tx, hy + 3, 0.1); D.line(ctx, hx + tx, hy + 15, hx + tx, hy + 9, 0.1); }
+      D.dot(ctx, hx - 34, hy - 18, 2.5);
+      D.ellipse(ctx, hx - 22, hy - 26, 4, 5, { fill: 'rgba(120,80,60,0.75)', amt: 0.2 });
+      D.ellipse(ctx, hx + 30, hy - 30, 10, 4, { rot: -0.5, fill: 'rgba(76,175,106,0.85)', amt: 0.2 });
+      D.ellipse(ctx, hx + 46, hy - 26, 10, 4, { rot: 0.5, fill: 'rgba(76,175,106,0.85)', amt: 0.2 });
+      for (const bx of [36, 40, 44]) D.dot(ctx, hx + bx, hy - 32, 2.6, RED);
+      D.text(ctx, 'IN CINEMAS THIS BOXING DAY', x + 145, 318, 12, { sc: true });
+      ctx.globalAlpha = 0.3;
+    } else if (r < 0.33) {
       // window with snow
       D.rect(ctx, x + 40, 120, 120, 150, { fill: true });
       D.line(ctx, x + 100, 120, x + 100, 270);

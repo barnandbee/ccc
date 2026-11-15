@@ -504,18 +504,30 @@ export function drawTapir(ctx, p = {}) {
   const st = p.state || 'idle', t = p.t || 0, ph = p.phase || 0;
   const run = st === 'run', fly = st === 'glide';
   const bob = run ? -Math.abs(Math.sin(ph)) * 2 : st === 'idle' ? Math.sin(t * 2) * 0.7 : fly ? Math.sin(t * 6) * 1.5 : 0;
-  // the icy aura, spiky and shimmering
-  ctx.save();
-  ctx.globalAlpha = 0.45;
-  D.pen(ctx, 'rgba(110,150,210,1)', 1.6);
-  const pts = [];
-  for (let i = 0; i <= 14; i++) {
-    const a = Math.PI * (1.05 + (i / 14) * 0.9);
-    const r = (i % 2 ? 30 : 40) + Math.sin(t * 3 + i) * 3;
-    pts.push([2 + Math.cos(a) * r * 1.2, -18 + Math.sin(a) * r]);
+  // the aura: a jagged ring that orbits and pulses all the way round
+  const pulse = 1 + Math.sin(t * 3) * 0.08;
+  for (const [layer, alpha, spin] of [[0, 0.5, 0.6], [1, 0.3, -0.4]]) {
+    ctx.save();
+    ctx.translate(2, -24 + bob);
+    ctx.rotate(t * spin);
+    ctx.scale(pulse + layer * 0.12, (pulse + layer * 0.12) * 0.8);
+    ctx.globalAlpha = alpha;
+    D.pen(ctx, layer ? 'rgba(170,120,230,1)' : 'rgba(110,160,230,1)', 1.6);
+    const pts = [];
+    const n = 22;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      const r = i % 2 ? 30 : 40 + Math.sin(t * 5 + i) * 3;
+      pts.push([Math.cos(a) * r, Math.sin(a) * r]);
+    }
+    D.poly(ctx, pts, { amt: 0.4 });
+    ctx.restore();
   }
-  D.poly(ctx, pts, { close: false, amt: 0.5 });
-  ctx.restore();
+  // twinkling motes inside the aura
+  for (let i = 0; i < 5; i++) {
+    const a = t * 1.2 + i * 1.26;
+    if (Math.sin(t * 4 + i) > 0) D.star(ctx, 2 + Math.cos(a) * 30, -24 + bob + Math.sin(a) * 22, 2.4, { fill: '#fff', amt: 0.1 });
+  }
   D.pen(ctx);
   // four stumpy legs
   const sw = run ? Math.sin(ph) * 4 : fly ? 3 : 0;
@@ -528,23 +540,35 @@ export function drawTapir(ctx, p = {}) {
   D.pen(ctx, 'rgba(255,255,255,0.45)', 1);
   for (let i = -14; i <= 10; i += 6) D.line(ctx, i, -28 + bob, i + 6, -13 + bob, 0.2);
   D.pen(ctx);
-  // head and long drooping snout
+  // head and trunk as one shape, flowing straight from the face
   const hx = 16, hy = -27 + bob;
-  D.ellipse(ctx, hx, hy, 9, 8, { fill: true });
-  D.curve(ctx, [[hx + 6, hy - 4], [hx + 16, hy + 2], [hx + 18, hy + 14], [hx + 14, hy + 18]], 0.3);
-  D.curve(ctx, [[hx + 6, hy + 4], [hx + 12, hy + 8], [hx + 12, hy + 16], [hx + 14, hy + 18]], 0.3);
-  D.circle(ctx, hx + 2, hy - 1, 3.6, { fill: '#fff', amt: 0.2 });
-  D.dot(ctx, hx + 3, hy - 1, 1.6);
-  D.ellipse(ctx, hx - 6, hy - 6, 3, 3.5, { fill: true, amt: 0.2 });
+  const sway = Math.sin(t * 2.2) * 1.5;
+  D.poly(ctx, [
+    [hx - 8, hy + 2], [hx - 8, hy - 4], [hx - 4, hy - 8], [hx + 3, hy - 8], [hx + 9, hy - 5],
+    [hx + 15, hy], [hx + 18, hy + 6], [hx + 18 + sway, hy + 13], [hx + 15 + sway, hy + 18],
+    [hx + 12 + sway, hy + 17], [hx + 13 + sway, hy + 11], [hx + 10, hy + 6], [hx + 4, hy + 6], [hx - 3, hy + 6],
+  ], { fill: true, amt: 0.3 });
+  D.circle(ctx, hx + 1, hy - 1, 3.6, { fill: '#fff', amt: 0.2 });
+  D.dot(ctx, hx + 2, hy - 1, 1.6);
+  D.ellipse(ctx, hx - 6, hy - 7, 3, 3.5, { fill: true, amt: 0.2 });
   // crown with three bobbles
   D.poly(ctx, [[hx - 5, hy - 7], [hx - 4, hy - 15], [hx - 1, hy - 10], [hx + 1, hy - 17], [hx + 3, hy - 10], [hx + 6, hy - 15], [hx + 6, hy - 7]], { fill: 'rgba(241,200,75,0.9)', amt: 0.2 });
   for (const cx of [-4, 1, 6]) D.dot(ctx, hx + cx, hy - 17 + (cx === 1 ? -1 : 0), 1.6);
-  // a stopwatch floating nearby, ticking
-  const sx = -22, sy = -46 + Math.sin(t * 2) * 2;
-  D.circle(ctx, sx, sy, 4.5, { fill: true, amt: 0.2 });
-  D.line(ctx, sx, sy - 4.5, sx, sy - 7, 0.1);
-  const a = t * (p.throwing ? 12 : 2);
-  D.line(ctx, sx, sy, sx + Math.cos(a) * 3, sy + Math.sin(a) * 3, 0.1);
+  // a stopwatch hovering nearby: winder and loop on top, side button, tick marks, sweeping hand
+  const sx = -24, sy = -50 + Math.sin(t * 2) * 2.5;
+  D.pen(ctx, INK, 1.8);
+  D.circle(ctx, sx, sy, 6, { fill: true, amt: 0.2 });
+  D.rect(ctx, sx - 1.5, sy - 9, 3, 3, { fill: INK, amt: 0.1 });
+  D.circle(ctx, sx, sy - 11, 2, { amt: 0.1 });
+  D.line(ctx, sx + 4, sy - 5, sx + 6, sy - 7, 0.1);
+  for (let i = 0; i < 4; i++) {
+    const a = (i * Math.PI) / 2;
+    D.line(ctx, sx + Math.cos(a) * 4.2, sy + Math.sin(a) * 4.2, sx + Math.cos(a) * 5.4, sy + Math.sin(a) * 5.4, 0.05);
+  }
+  const a = -Math.PI / 2 + t * (p.throwing ? 12 : 2);
+  D.line(ctx, sx, sy, sx + Math.cos(a) * 4, sy + Math.sin(a) * 4, 0.05);
+  D.dot(ctx, sx, sy, 0.9);
+  D.pen(ctx);
 }
 
 export const CHARACTERS = {
@@ -586,6 +610,7 @@ export const CHARACTERS = {
     accel: 1500,
     friction: 1100,
     airControl: 0.7,
+    jump: 860, // a much better standard jump than everyone else's
     abilities: { sprint: true },
     tagline: 'Famed 2027 partygoer',
   },

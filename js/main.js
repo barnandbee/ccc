@@ -277,6 +277,14 @@ function paintCanvas(c, t) {
     ctx.scale(1.3, 1.3);
     S.drawTree(ctx, true, t + 1);
     ctx.restore();
+    // two glittery flamingos, gold and silver
+    for (const [fx, gold] of [[385, true], [175, false]]) {
+      ctx.save();
+      ctx.translate(fx, 252);
+      ctx.scale(fx > 300 ? 1.5 : -1.5, 1.5);
+      S.drawFlamingo(ctx, t, gold);
+      ctx.restore();
+    }
     const cols = [D.RED, D.GOLD, '#3b9ad9', '#4caf6a'];
     for (let i = 0; i < 26; i++) {
       const x = (D.hash(i * 7) * 560 + t * 20 * (i % 3 + 1)) % 560;

@@ -451,7 +451,7 @@ export class Game {
       p.vx = approach(p.vx, target, a * dt);
       if (dir) p.facing = dir;
       if (p.jumpBuf > 0 && p.coyote > 0) {
-        p.vy = -JUMP_V;
+        p.vy = -(ch.jump || JUMP_V);
         p.jumpBuf = 0;
         p.coyote = 0;
         p.onGround = false;
