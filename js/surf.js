@@ -94,6 +94,7 @@ export class Surf {
     this.toasts = [];
     this.stats = { stars: 0, total: 0, smashed: 0, wipeouts: 0 };
     this.nextSpawn = 700;
+    this.cerealDone = false;
     this.nextMilestone = 100;
     this.banner = 4;
     this.state = 'play';
@@ -107,6 +108,12 @@ export class Surf {
 
   // ---------- Spawning ----------
   spawn(wx) {
+    if (!this.cerealDone && wx >= 3900) {
+      // a box of Tapir-O's, bobbing on the nog around 100 m
+      this.cerealDone = true;
+      this.items.push({ kind: 'float', look: 'cereal', wx, off: 0, w: 34, h: 44 });
+      return 520;
+    }
     const k = Math.min(1, this.dist / 24000); // 0 at the start, 1 after about 600 m
     const r = Math.random();
     const early = this.dist < 1600;
@@ -183,7 +190,7 @@ export class Surf {
         if (ab.projectile === 'harp') sfx.harp(); else if (ab.projectile === 'pulse') sfx.pulse(); else sfx.throw();
       }
       // sprint, charge, pounce or stamp all smash through hazards on the wave
-      if ((ab.sprint || ab.pounce || ab.stamp) && p.sprintCD <= 0) {
+      if ((ab.sprint || ab.pounce || ab.stamp || ab.timeStop) && p.sprintCD <= 0) {
         p.sprintT = ab.stamp ? 0.4 : 0.65;
         p.sprintCD = ab.stamp ? 1.1 : 1.6;
         p.throwAnim = ab.stamp ? 0.4 : 0;
@@ -222,8 +229,8 @@ export class Surf {
       if (p.vy < 0 && !input.jump && !p.fullRise) g *= 2.4;
       p.vy += g * dt;
       p.gliding = false;
-      if (ab.glide && input.jump && p.vy > 0) {
-        p.vy = Math.min(p.vy, ab.glide);
+      if ((ab.glide || ab.fly) && input.jump && p.vy > 0) {
+        p.vy = Math.min(p.vy, ab.glide || 90);
         p.gliding = true;
       }
       p.y += p.vy * dt;
@@ -259,6 +266,7 @@ export class Surf {
       }
       const hb = { x: sx - it.w / 2, y: iy - it.h, w: it.w, h: it.h };
       if (!overlap(box, hb)) continue;
+      if (it.look === 'cereal') this.hooks.onClue?.('cereal');
       if (p.sprintT > 0) {
         this.smash(it, sx, iy);
       } else if (p.inv <= 0) {
@@ -394,6 +402,7 @@ export class Surf {
       else if (it.kind === 'fly') drawFruitcake(ctx, this.time + it.phase);
       else if (it.look === 'sprout') { ctx.scale(1.2, 1.2); S.drawWalker(ctx, 1, 0); }
       else if (it.look === 'pudding') drawPudding(ctx);
+      else if (it.look === 'cereal') drawCereal(ctx);
       else drawCracker(ctx);
       ctx.restore();
     }
@@ -615,4 +624,15 @@ function drawFruitcake(ctx, t) {
   D.rect(ctx, -18, -26, 36, 22, { fill: 'rgba(120,70,40,0.6)', amt: 0.4 });
   for (const [x, y, c] of [[-10, -18, D.RED], [0, -12, '#4caf6a'], [9, -20, D.GOLD], [6, -9, D.RED]]) D.dot(ctx, x, y, 2.4, c);
   D.text(ctx, 'fruitcake', 0, -36, 11);
+}
+
+function drawCereal(ctx) {
+  D.pen(ctx, D.INK, 2.2);
+  ctx.save();
+  ctx.rotate(0.08);
+  D.rect(ctx, -17, -48, 34, 46, { fill: 'rgba(241,200,75,0.85)', amt: 0.4 });
+  D.text(ctx, "TAPIR-O's", 0, -40, 9, { color: D.RED, sc: true });
+  for (const [x, y] of [[-8, -26], [2, -30], [9, -20], [-4, -16], [6, -10]]) D.circle(ctx, x, y, 3.2, { amt: 0.2 });
+  D.line(ctx, -14, -6, 14, -6, 0.2);
+  ctx.restore();
 }

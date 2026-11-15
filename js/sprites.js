@@ -337,6 +337,12 @@ function drawTreasure(ctx, kind, t) {
     D.zigzag(ctx, 0, -9, 0, 12, 2.6, 4);
     D.line(ctx, -11, 11, 11, 11, 0.2);
     D.pen(ctx, INK, 2);
+  } else if (kind === 'tapir') {
+    // a snooker triangle racked with reds
+    D.poly(ctx, [[-15, 10], [15, 10], [0, -16]], { fill: 'rgba(120,70,40,0.35)', amt: 0.3 });
+    for (let row = 0; row < 4; row++) {
+      for (let i = 0; i <= row; i++) D.circle(ctx, (i - row / 2) * 6.2, -9 + row * 5.6, 2.7, { fill: 'rgba(200,50,60,0.9)', amt: 0.1 });
+    }
   } else if (kind === 'monday') {
     // a Friday off
     D.rect(ctx, -12, -14, 24, 28, { fill: true, amt: 0.4 });
@@ -457,6 +463,17 @@ export function drawOffice(ctx, o, t) {
     D.pen(ctx, INK, 2.3);
   }
 
+  // the bookshelf
+  const bsx = 18.6 * T;
+  D.rect(ctx, bsx - 26, 300, 52, 180, { fill: 'rgba(120,70,40,0.35)' });
+  for (let sh = 0; sh < 4; sh++) {
+    const sy = 300 + sh * 45;
+    D.line(ctx, bsx - 26, sy + 44, bsx + 26, sy + 44, 0.3);
+    for (let b = 0; b < 5; b++) {
+      const bh = 26 + D.hash(sh * 7 + b) * 12;
+      D.rect(ctx, bsx - 22 + b * 9, sy + 44 - bh, 7, bh, { fill: ['rgba(200,50,60,0.6)', 'rgba(29,79,184,0.5)', 'rgba(76,175,106,0.5)', 'rgba(241,200,75,0.6)'][(sh + b) % 4], amt: 0.2 });
+    }
+  }
   // the wall calendar
   const kx = 16 * T;
   D.rect(ctx, kx - 28, 180, 56, 66, { fill: true });
@@ -816,7 +833,20 @@ function bgPiece(ctx, theme, k, x) {
       D.text(ctx, '(mostly pain)', x + 110, 252, 13);
     }
   } else {
-    if (r < 0.35) {
+    if (k === 6) {
+      // one billboard, more visible than the rest
+      ctx.globalAlpha = 0.8;
+      D.line(ctx, x + 70, 330, x + 70, y0);
+      D.line(ctx, x + 230, 330, x + 230, y0);
+      D.rect(ctx, x + 20, 140, 260, 190, { fill: 'rgba(241,200,75,0.35)' });
+      D.text(ctx, "'TIS THE SEASON", x + 150, 180, 26, { sc: true });
+      D.text(ctx, 'TO BE A TAPIR', x + 150, 214, 26, { sc: true });
+      D.ellipse(ctx, x + 140, 280, 34, 18, { fill: true });
+      D.curve(ctx, [[x + 170, 272], [x + 196, 282], [x + 198, 300]], 0.5);
+      D.dot(ctx, x + 162, 270, 2.5);
+      for (const lx of [118, 130, 150, 162]) D.line(ctx, x + lx, 292, x + lx, 308, 0.4);
+      ctx.globalAlpha = 0.3;
+    } else if (r < 0.35) {
       // filing cabinet
       D.rect(ctx, x + 60, 260, 90, y0 - 260, { fill: true });
       for (let i = 0; i < 4; i++) {
@@ -895,6 +925,26 @@ function drawCellarRoom(ctx) {
   for (const [dx, len] of [[-110, 22], [-62, 14], [-8, 28], [48, 12], [96, 20]]) D.line(ctx, 300 + dx, 318 - dx * 0.12, 300 + dx, 318 - dx * 0.12 + len, 0.3);
   D.pen(ctx, 'rgba(200,50,60,0.75)', 2.2);
   D.heart(ctx, 440, 270, 12);
+  // a framed impressionist painting: a tapir adrift in the galaxy
+  ctx.save();
+  ctx.translate(195, 130);
+  ctx.scale(1.25, 1.25);
+  const fx = 0, fy = 0;
+  D.pen(ctx, INK, 3);
+  D.rect(ctx, fx - 8, fy - 8, 136, 106, { fill: 'rgba(160,110,40,0.5)', amt: 0.5 });
+  D.rect(ctx, fx, fy, 120, 90, { fill: 'rgba(30,40,90,0.85)', amt: 0.4 });
+  for (let i = 0; i < 40; i++) {
+    const cols = ['rgba(241,200,75,0.9)', 'rgba(224,122,208,0.8)', 'rgba(140,190,250,0.9)', '#fff'];
+    ctx.fillStyle = cols[i % 4];
+    ctx.fillRect(fx + 4 + D.hash(i * 3) * 110, fy + 4 + D.hash(i * 7) * 80, 3 + (i % 3), 2);
+  }
+  D.pen(ctx, 'rgba(240,230,255,0.9)', 2);
+  D.ellipse(ctx, fx + 64, fy + 48, 22, 11, { fill: 'rgba(200,190,240,0.5)', amt: 0.6 });
+  D.curve(ctx, [[fx + 84, fy + 44], [fx + 98, fy + 50], [fx + 100, fy + 62]], 0.5);
+  D.dot(ctx, fx + 80, fy + 42, 2, '#fff');
+  for (const lx of [50, 58, 70, 78]) D.line(ctx, fx + lx, fy + 56, fx + lx - 2, fy + 66, 0.4);
+  ctx.restore();
+  D.pen(ctx, INK, 2.2);
 }
 
 export function drawBackground(ctx, theme, camX, VW) {

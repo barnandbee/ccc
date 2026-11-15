@@ -423,3 +423,4 @@ body.playing, body.playing #app { touch-action: none; }
 #s-intro.active { display: flex; align-items: center; justify-content: center; }
 #introCanvas { display: block; }
 #s-intro .skip { position: absolute; top: max(10px, env(safe-area-inset-top)); right: max(10px, env(safe-area-inset-right)); background: var(--paper); }
+.card-head .num { text-transform: none; }

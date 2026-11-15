@@ -497,6 +497,56 @@ export function drawScales(ctx, p = {}) {
   ctx.restore();
 }
 
+
+// The Inverse Tapir of Seasonal Space-Time: a crowned tapir in a frosty,
+// icy aura. Drawn facing right with feet at (0,0).
+export function drawTapir(ctx, p = {}) {
+  const st = p.state || 'idle', t = p.t || 0, ph = p.phase || 0;
+  const run = st === 'run', fly = st === 'glide';
+  const bob = run ? -Math.abs(Math.sin(ph)) * 2 : st === 'idle' ? Math.sin(t * 2) * 0.7 : fly ? Math.sin(t * 6) * 1.5 : 0;
+  // the icy aura, spiky and shimmering
+  ctx.save();
+  ctx.globalAlpha = 0.45;
+  D.pen(ctx, 'rgba(110,150,210,1)', 1.6);
+  const pts = [];
+  for (let i = 0; i <= 14; i++) {
+    const a = Math.PI * (1.05 + (i / 14) * 0.9);
+    const r = (i % 2 ? 30 : 40) + Math.sin(t * 3 + i) * 3;
+    pts.push([2 + Math.cos(a) * r * 1.2, -18 + Math.sin(a) * r]);
+  }
+  D.poly(ctx, pts, { close: false, amt: 0.5 });
+  ctx.restore();
+  D.pen(ctx);
+  // four stumpy legs
+  const sw = run ? Math.sin(ph) * 4 : fly ? 3 : 0;
+  for (const [lx, f] of [[-15, sw], [-9, -sw], [5, -sw], [11, sw]]) {
+    D.line(ctx, lx, -12 + bob, lx + f, 0, 0.3);
+    D.line(ctx, lx + f - 2, 0, lx + f + 3, 0, 0.2);
+  }
+  // body: dark and crosshatched, like the card
+  D.ellipse(ctx, -2, -20 + bob, 19, 11, { fill: 'rgba(29,79,184,0.8)' });
+  D.pen(ctx, 'rgba(255,255,255,0.45)', 1);
+  for (let i = -14; i <= 10; i += 6) D.line(ctx, i, -28 + bob, i + 6, -13 + bob, 0.2);
+  D.pen(ctx);
+  // head and long drooping snout
+  const hx = 16, hy = -27 + bob;
+  D.ellipse(ctx, hx, hy, 9, 8, { fill: true });
+  D.curve(ctx, [[hx + 6, hy - 4], [hx + 16, hy + 2], [hx + 18, hy + 14], [hx + 14, hy + 18]], 0.3);
+  D.curve(ctx, [[hx + 6, hy + 4], [hx + 12, hy + 8], [hx + 12, hy + 16], [hx + 14, hy + 18]], 0.3);
+  D.circle(ctx, hx + 2, hy - 1, 3.6, { fill: '#fff', amt: 0.2 });
+  D.dot(ctx, hx + 3, hy - 1, 1.6);
+  D.ellipse(ctx, hx - 6, hy - 6, 3, 3.5, { fill: true, amt: 0.2 });
+  // crown with three bobbles
+  D.poly(ctx, [[hx - 5, hy - 7], [hx - 4, hy - 15], [hx - 1, hy - 10], [hx + 1, hy - 17], [hx + 3, hy - 10], [hx + 6, hy - 15], [hx + 6, hy - 7]], { fill: 'rgba(241,200,75,0.9)', amt: 0.2 });
+  for (const cx of [-4, 1, 6]) D.dot(ctx, hx + cx, hy - 17 + (cx === 1 ? -1 : 0), 1.6);
+  // a stopwatch floating nearby, ticking
+  const sx = -22, sy = -46 + Math.sin(t * 2) * 2;
+  D.circle(ctx, sx, sy, 4.5, { fill: true, amt: 0.2 });
+  D.line(ctx, sx, sy - 4.5, sx, sy - 7, 0.1);
+  const a = t * (p.throwing ? 12 : 2);
+  D.line(ctx, sx, sy, sx + Math.cos(a) * 3, sy + Math.sin(a) * 3, 0.1);
+}
+
 export const CHARACTERS = {
   tim: {
     id: 'tim',
@@ -640,8 +690,37 @@ export const CHARACTERS = {
       victory: 'Blue Monday has saved the Seasonal Spirit. Nobody saw that coming, least of all Blue Monday.',
     },
   },
+  // The final secret: unlocked by every other character plus three tapir sightings
+  tapir: {
+    id: 'tapir', number: '#e', name: 'Inverse Tapir of Seasonal Space-Time', first: 'The Tapir',
+    unlockedBy: 'sightings',
+    cardTone: 'white', draw: drawTapir,
+    hints: {
+      special: 'Press X (or ★) for Temporal Vacuum: time stops. Hold jump in the air for Frosty Reception!',
+      wall: 'A gloom wall! Stop time and walk straight through it.',
+      gap: 'Too far to jump. Jump, then hold jump to fly across.',
+    },
+    speed: 245, accel: 2000, friction: 2300, airControl: 0.85,
+    abilities: { timeStop: true, fly: 5 },
+    card: {
+      signature: 'I.T.o.S.S-T',
+      stats: [
+        ['Name', 'Inverse Tapir of Seasonal Space-Time'],
+        ['Age', '∞'],
+        ['Purpose', 'The absolute epitome of the festive spirit'],
+        ['Favourite athlete', 'Dennis Taylor'],
+        ['Likes', 'Yorkshire pudding'],
+        ['Vision', 'All things, past & present'],
+      ],
+      ability: 'Temporal Vacuum & Frosty Reception',
+      abilityHow: "Your special (X, a tap, or the ★ button) is Temporal Vacuum: time stops for 3 seconds. Minions, bosses and their missiles freeze, and anything you walk into is swept away, gloom walls included. Hold jump in the air for Frosty Reception: up to 5 seconds of flight, trailing snowflakes.",
+      secret: 'snooker triangle',
+      secrets: 'snooker triangles',
+      victory: 'The Inverse Tapir of Seasonal Space-Time has saved the Seasonal Spirit. It was always going to; it saw it happen.',
+    },
+  },
 };
 
 // in card-number order
-export const ORDER = ['tim', 'clive', 'rinky', 'rex', 'satsuma', 'watson', 'scales', 'edna', 'monday'];
+export const ORDER = ['tim', 'clive', 'rinky', 'rex', 'satsuma', 'watson', 'scales', 'edna', 'monday', 'tapir'];
 

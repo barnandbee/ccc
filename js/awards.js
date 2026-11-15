@@ -41,7 +41,7 @@ export function blankFacts() {
     fullRun: false, seasonSaved: false, allCards: false, allStars: false, allSecrets: false,
     noHit: false, speedy: false, reindeer: false, monday: false, board: false,
     dark: false, acid: false, mondayUnlocked: false, ebenezer: false,
-    bestRun: 0, blackWednesday: false, gymBunny: false, treasures: {}, everyone: false, giant: false, unlockedCount: 0, characterCount: 0,
+    bestRun: 0, blackWednesday: false, gymBunny: false, treasures: {}, everyone: false, giant: false, clues: {}, unlockedCount: 0, characterCount: 0,
   };
 }
 

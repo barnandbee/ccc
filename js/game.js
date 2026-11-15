@@ -23,7 +23,8 @@ const PROJ = {
 };
 const POUNCE_V = 560;
 // sprinting, charging or pouncing: smashes walls and minions, can't be hurt
-const smashing = (o) => o.sprintT > 0 || o.pounceT > 0;
+// sprinting, pouncing, or moving through stopped time (the tapir's Temporal Vacuum)
+const smashing = (o) => o.sprintT > 0 || o.pounceT > 0 || o.timeStopT > 0;
 const isSolid = (v) => v === TILE.SOLID || v === TILE.CONV_L || v === TILE.CONV_R || v === TILE.GLOOM;
 const approach = (v, target, d) => (v < target ? Math.min(v + d, target) : Math.max(v - d, target));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -157,7 +158,7 @@ export class Game {
       x: sp.x - 14, y: sp.y - 54, w: 28, h: 54, vx: 0, vy: 0,
       onGround: false, facing: 1, coyote: 0, jumpBuf: 0, hp: 3, inv: 0, knock: 0,
       sprintT: 0, sprintCD: 0, throwCD: 0, throwAnim: 0, gliding: false, dead: 0,
-      flipT: 0, airJumpsLeft: 0, ski: false, fullRise: false, pounceT: 0, pounceCD: 0, pouncedAir: false, stampCD: 0,
+      flipT: 0, timeStopT: 0, timeStopCD: 0, flyLeft: 0, airJumpsLeft: 0, ski: false, fullRise: false, pounceT: 0, pounceCD: 0, pouncedAir: false, stampCD: 0,
       phase: 0, ride: null, groundTile: 0, canRide: true,
     };
   }
@@ -358,8 +359,11 @@ export class Game {
     const ab = ch.abilities;
     p.pounceCD -= dt;
     p.stampCD -= dt;
+    p.timeStopCD -= dt;
+    p.timeStopT = Math.max(0, p.timeStopT - dt);
     if (p.onGround) {
       p.airJumpsLeft = ab.airJumps?.count || 0;
+      p.flyLeft = ab.fly || 0;
       p.ski = false;
       p.pouncedAir = false;
     }
@@ -391,6 +395,14 @@ export class Game {
         p.ride = null;
         sfx.sprint();
         this.burst(p.x + p.w / 2, p.y + p.h, 5, 'dust');
+      }
+      if (ab.timeStop && p.timeStopCD <= 0) {
+        // Temporal Vacuum: stop time for 3 seconds
+        p.timeStopT = 3;
+        p.timeStopCD = 6;
+        p.throwAnim = 0.4;
+        sfx.timeStop();
+        this.toast('Temporal Vacuum!');
       }
       if (ab.stamp && p.stampCD <= 0) {
         if (dir) p.facing = dir;
@@ -466,6 +478,14 @@ export class Game {
       if (p.vy < 0 && !input.jump && !p.fullRise) g *= 2.4;
       p.vy += g * dt;
       p.gliding = false;
+      // Frosty Reception: hold jump in the air to fly for up to 5 seconds per trip
+      if (ab.fly && input.jump && !p.onGround && p.flyLeft > 0 && p.vy > -260) {
+        p.flyLeft -= dt;
+        p.vy = Math.max(-260, p.vy - 3200 * dt);
+        if (p.y < 40) p.vy = Math.max(p.vy, 0);
+        p.gliding = true;
+        if (Math.random() < 0.6) this.burst(p.x + p.w / 2 - p.facing * 18, p.y + p.h * 0.6, 1, 'snow');
+      }
       if (ab.glide && input.jump && !p.onGround && p.vy > 0) {
         p.gliding = true;
         p.vy = Math.min(p.vy, ab.glide);
@@ -586,9 +606,15 @@ export class Game {
   updateEnemies(dt) {
     const p = this.player;
     const camX = this.cam.x;
+    const frozen = p.timeStopT > 0;
     for (const e of this.enemies) {
       if (!e.alive) { e.dying -= dt; continue; }
       if (e.x < camX - 500 || e.x > camX + VW + 500) continue; // asleep off-screen
+      if (frozen) {
+        // stopped in time: anything the tapir walks into is swept away
+        if (this.state === 'play' && p.dead <= 0 && overlap(p, e)) { this.defeat(e); sfx.stomp(); }
+        continue;
+      }
       e.t += dt;
       if (e.kind === 'walker') {
         this.moveX(e, e.dir * e.speed * dt);
@@ -690,6 +716,15 @@ export class Game {
   updateBoss(dt) {
     const b = this.boss;
     if (!b) return;
+    if (this.player.timeStopT > 0 && !b.dead) {
+      // frozen in time, along with its missiles; walking into it still counts
+      b.inv = Math.max(0, b.inv - dt);
+      const p = this.player;
+      if (b.active && b.intro <= 0 && this.state === 'play' && p.dead <= 0 && overlap(p, b)) {
+        if (b.type === 'reindeer') this.engage(b); else this.damageBoss();
+      }
+      return;
+    }
     b.t += dt;
     if (b.dead) {
       b.deathT = Math.max(0, b.deathT - dt);
@@ -958,6 +993,12 @@ export class Game {
   cellarInteract() {
     const pcx = this.player.x + this.player.w / 2;
     if (Math.abs(pcx - 3 * T) < 46) { this.exitCellar(); return true; }
+    if (Math.abs(pcx - 6.8 * T) < 50) {
+      this.toast('An impressionist tapir, adrift in the galaxy.');
+      sfx.click();
+      this.hooks.onClue?.('painting');
+      return true;
+    }
     if (Math.abs(pcx - 19.5 * T) < 60) {
       this.toast('On The Venns: coming soon!');
       sfx.click();
@@ -969,7 +1010,7 @@ export class Game {
   updateCellar() {
     const c = this.cellar, p = this.player;
     const pcx = p.x + p.w / 2;
-    c.near = Math.abs(pcx - 3 * T) < 46 ? 'climb the ladder' : Math.abs(pcx - 19.5 * T) < 60 ? 'read the poster' : null;
+    c.near = Math.abs(pcx - 3 * T) < 46 ? 'climb the ladder' : Math.abs(pcx - 6.8 * T) < 50 ? 'look at the painting' : Math.abs(pcx - 19.5 * T) < 60 ? 'read the poster' : null;
     if (!c.got && Math.abs(pcx - 14 * T) < 60 && p.y + p.h > 12 * T - 160) {
       c.got = true;
       this.stats.giant = 1000;
@@ -991,6 +1032,7 @@ export class Game {
       { id: 'candle', x: 13.4 * T, label: 'snuff the candle' },
       { id: 'calendar', x: 16 * T, label: 'turn the calendar' },
       { id: 'door', x: 21 * T, label: 'flip the door sign' },
+      { id: 'books', x: 18.6 * T, label: 'look at the bookshelf' },
     ];
   }
 
@@ -1055,6 +1097,11 @@ export class Game {
           o.day = o.day >= 26 ? 20 : o.day + 1;
           this.officeSay(o.day === 26 ? 'Boxing Day. Gone too far!' : `The calendar now says ${o.day} December.`, obj.x, 300);
         }
+        break;
+      case 'books':
+        this.officeSay('All the classics: To Kill A Mockingbird by Harper Lee. Jane Eyre by Charlotte Brontë. Treasure Island by Robert Louis Stevenson. Where Is My Hat? by Jon Klassen. The Inverse Tapir of Seasonal Space Time by Mary Nell Abbott.', obj.x, 230);
+        this.office.say.life = 9;
+        this.hooks.onClue?.('bookshelf');
         break;
       case 'door':
         if (o.closed) this.officeSay('CLOSED FOR CHRISTMAS', obj.x, 330);
@@ -1255,6 +1302,7 @@ export class Game {
       if (type === 'confetti') { part.color = cols[i % cols.length]; part.g = 300; part.life = 1.6 + Math.random(); part.vy -= 150; }
       if (type === 'line') { part.vx = -this.player.facing * 200; part.vy = 0; part.g = 0; part.life = 0.25; part.len = 12 + Math.random() * 14; }
       if (type === 'dust') { part.vy = -30 - Math.random() * 40; part.vx = (Math.random() - 0.5) * 120; part.g = 0; part.life = 0.35; }
+      if (type === 'snow') { part.vx = -this.player.facing * 40 + (Math.random() - 0.5) * 40; part.vy = 30 + Math.random() * 40; part.g = 0; part.life = 1; }
       if (type === 'heart') { part.vx = 0; part.vy = -70; part.g = 0; part.life = 1; }
       if (type === 'star') { part.g = 200; part.life = 0.5; }
       part.max = part.life;
@@ -1431,6 +1479,16 @@ export class Game {
     ctx.restore();
 
     if (L.theme === 2) S.drawRain(ctx, this.time, VW, VH);
+    if (this.player.timeStopT > 0) {
+      // stopped time: a cold blue wash and a ticking stopwatch
+      ctx.fillStyle = 'rgba(120,170,230,0.16)';
+      ctx.fillRect(0, 0, VW, VH);
+      D.pen(ctx, D.INK, 2.4);
+      D.circle(ctx, VW - 70, 100, 22, { fill: true });
+      D.rect(ctx, VW - 75, 70, 10, 7, { fill: true, amt: 0.2 });
+      const a = -Math.PI / 2 + (1 - this.player.timeStopT / 3) * Math.PI * 2;
+      D.line(ctx, VW - 70, 100, VW - 70 + Math.cos(a) * 15, 100 + Math.sin(a) * 15, 0.2);
+    }
     this.drawHUD(ctx);
   }
 
@@ -1587,7 +1645,10 @@ export class Game {
       } else if (p.type === 'star') {
         D.pen(ctx, D.INK, 1.5);
         D.star(ctx, 0, 0, 5, { fill: D.GOLD });
-      } else if (p.type === 'debris') {
+      } else if (p.type === 'snow') {
+        D.pen(ctx, 'rgba(150,190,240,1)', 1.4);
+        for (let i = 0; i < 3; i++) { const an = p.rot + (i * Math.PI) / 3; D.line(ctx, -Math.cos(an) * 4, -Math.sin(an) * 4, Math.cos(an) * 4, Math.sin(an) * 4, 0.1); }
+            } else if (p.type === 'debris') {
         ctx.rotate(p.rot);
         D.pen(ctx, D.GLOOM, 2);
         D.line(ctx, -5, -3, 5, 3, 0.5);

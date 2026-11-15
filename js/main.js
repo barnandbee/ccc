@@ -72,8 +72,8 @@ let pausedForRotate = false;
 const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 
 const canvas = $('#game');
-const game = new Game(canvas, { onComplete, onPause: pauseGame, onOfficeDone, onGiant });
-const surf = new Surf(canvas, { onComplete, onPause: pauseGame });
+const game = new Game(canvas, { onComplete, onPause: pauseGame, onOfficeDone, onGiant, onClue });
+const surf = new Surf(canvas, { onComplete, onPause: pauseGame, onClue });
 let engine = game; // whichever is running: the platformer or the bonus surf level
 if (DEV) window.__surf = surf;
 const STARS_FOR_BONUS = 100;
@@ -350,6 +350,27 @@ function maybeUnlockMonday() {
   cards.monday = m.card;
   return true;
 }
+// The tapir: every other character unlocked, plus the bookshelf, the painting and the cereal box
+const TAPIR_CLUES = ['bookshelf', 'painting', 'cereal'];
+function maybeUnlockTapir() {
+  if (save.unlocked.tapir) return false;
+  const others = ORDER.filter((id) => id !== 'tapir').every((id) => cards[id]);
+  const clues = save.facts.clues || {};
+  if (!others || !TAPIR_CLUES.every((c) => clues[c])) return false;
+  save.unlocked.tapir = 'earned';
+  cards.tapir = CHARACTERS.tapir.card;
+  refreshFacts();
+  awardCheck();
+  setTimeout(() => showToastMessage('Something has emerged from seasonal space-time...'), 600);
+  return true;
+}
+function onClue(name) {
+  save.facts.clues = save.facts.clues || {};
+  if (save.facts.clues[name]) return;
+  save.facts.clues[name] = true;
+  maybeUnlockTapir();
+  persist();
+}
 function refreshFacts() {
   for (const pr of Object.values(save.progress)) {
     if (pr.lastRun) save.facts.bestRun = Math.max(save.facts.bestRun || 0, pr.lastRun.total);
@@ -510,6 +531,7 @@ $('#unlockForm').addEventListener('submit', (e) => {
     msg.textContent = `Correct! ${CHARACTERS[id].first} is unlocked.`;
     msg.className = 'msg good';
     $('#unlockInput').blur();
+    maybeUnlockTapir();
     setTimeout(() => openCard(id), 900);
   } else {
     A.sfx.wrong();
@@ -752,6 +774,7 @@ function onComplete(result) {
     seasonSaved: !result.bonus && result.level === LEVELS.length - 1,
   });
   const mondayNews = maybeUnlockMonday();
+  maybeUnlockTapir();
   refreshFacts();
   awardCheck();
   if (mondayNews) setTimeout(() => showToastMessage('Blue Monday has changed sides! Find him on the character screen.'), 400);
@@ -983,6 +1006,7 @@ updateControlsLabel();
 applyTheme();
 // catch up awards and Blue Monday for saves from before they existed
 if (maybeUnlockMonday()) setTimeout(() => showToastMessage('Blue Monday has changed sides! Find him on the character screen.'), 800);
+maybeUnlockTapir();
 refreshFacts();
 updateAwardsLabel();
 setTimeout(awardCheck, 600);

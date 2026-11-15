@@ -133,7 +133,8 @@ function actions(cid, hasMovers) {
   }
   for (const d of [-1, 0, 1]) {
     for (const run of d ? [false, true] : [false]) {
-      for (const jump of [null, 0.08, 0.2, 99]) {
+      // fliers also try shorter flights, so they come back down within the time limit
+      for (const jump of ab.fly ? [null, 0.08, 0.2, 0.45, 0.7, 1.0, 99] : [null, 0.08, 0.2, 99]) {
         for (const special of specials) {
           for (const air of jump == null ? [null] : airs) {
             for (const release of d ? [null, 0.35] : [null]) {
