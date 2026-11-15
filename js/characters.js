@@ -451,13 +451,18 @@ export function drawScales(ctx, p = {}) {
     D.poly(ctx, [[hx + f - 4, -9], [hx + f + 2, -9], [hx + f + 2, -4], [hx + f + 7, -3], [hx + f + 7, 0], [hx + f - 4, 0]], { fill: 'rgba(120,70,40,0.7)', amt: 0.3 });
     D.star(ctx, hx + f - 6, -2, 2.6, { amt: 0.1 });
   }
+  // a proper fish tail out the back, flicking as he goes
+  const flick = Math.sin(t * (run ? 14 : 4)) * 3;
+  D.poly(ctx, [[-9, -24 + bob], [-22, -34 + bob + flick], [-19, -24 + bob], [-23, -14 + bob + flick]], { fill: 'rgba(29,79,184,0.55)', amt: 0.3 });
+  D.line(ctx, -19, -30 + bob + flick * 0.6, -13, -25 + bob, 0.1);
+  D.line(ctx, -19, -19 + bob + flick * 0.6, -13, -23 + bob, 0.1);
   // body in a cable-knit Arran jumper
   D.ellipse(ctx, 0, -27 + bob, 12, 15, { fill: 'rgba(240,230,205,0.95)' });
   D.pen(ctx, INK, 1.4);
   for (const cx of [-5, 5]) D.zigzag(ctx, cx, -38 + bob, cx, -16 + bob, 1.6, 6);
   D.line(ctx, -9, -18 + bob, 9, -18 + bob, 0.2);
   D.pen(ctx);
-  // fins as arms; one holds the 2027 sign, the other a sparkler
+  // fins as arms; one holds the 2027 calendar
   if (!dash) {
     D.poly(ctx, [[10, -31 + bob], [20, -40 + bob], [18, -30 + bob]], { fill: true, amt: 0.2 });
     // a little 2027 calendar: binder rings, a red header and the year
@@ -466,25 +471,26 @@ export function drawScales(ctx, p = {}) {
     for (const rx of [19, 24, 29]) D.line(ctx, rx, -60 + bob, rx, -56 + bob, 0.1);
     D.text(ctx, '2027', 24, -48 + bob, 5.5);
     for (const gx of [18, 22, 26, 30]) D.dot(ctx, gx, -44 + bob, 0.6);
-    D.poly(ctx, [[-10, -31 + bob], [-19, -38 + bob], [-17, -28 + bob]], { fill: true, amt: 0.2 });
-    D.line(ctx, -18, -36 + bob, -24, -50 + bob, 0.2);
-    if (Math.sin(t * 9) > -0.4) for (let i = 0; i < 5; i++) {
-      const a = t * 4 + i * 1.3;
-      D.line(ctx, -24, -50 + bob, -24 + Math.cos(a) * 5, -50 + bob + Math.sin(a) * 5, 0.1);
-    }
+    D.poly(ctx, [[-10, -31 + bob], [-17, -36 + bob], [-15, -27 + bob]], { fill: true, amt: 0.2 });
   } else {
     // backstroke: arms windmilling
     const a = t * 18;
     D.line(ctx, -8, -32, -8 + Math.cos(a) * 14, -32 + Math.sin(a) * 14, 0.3);
     D.line(ctx, 8, -32, 8 - Math.cos(a) * 14, -32 - Math.sin(a) * 14, 0.3);
   }
-  // fishy head: big eye, the haddock's dark thumbprint, and fat lips
+  // fishy head: a fin on top, two googly eyes, the haddock's thumbprint and fat lips
   const hy = -50 + bob;
+  D.poly(ctx, [[-6, hy - 9], [-3, hy - 22], [5, hy - 18], [9, hy - 8]], { fill: 'rgba(29,79,184,0.55)', amt: 0.3 });
+  D.line(ctx, -1, hy - 10, -1, hy - 18, 0.1);
+  D.line(ctx, 3, hy - 9, 3, hy - 16, 0.1);
   D.poly(ctx, [[-9, hy + 8], [-11, hy - 4], [-2, hy - 12], [9, hy - 8], [13, hy + 2], [9, hy + 9]], { fill: true });
-  D.poly(ctx, [[-11, hy - 4], [-2, hy - 12], [4, hy - 10], [-4, hy - 4]], { fill: 'rgba(29,79,184,0.85)', amt: 0.3 });
-  D.circle(ctx, 4, hy - 1, 4.2, { fill: true, amt: 0.2 });
-  D.dot(ctx, 5, hy - 1, 1.8);
-  D.ellipse(ctx, -4, hy + 2, 2.2, 2.8, { fill: INK, amt: 0.2 });
+  D.ellipse(ctx, -6, hy + 3, 2.2, 2.8, { fill: INK, amt: 0.2 });
+  // googly eyes: big whites, pupils rolling about loose
+  for (const [ex, k] of [[0, 0], [7, 1.7]]) {
+    D.circle(ctx, ex, hy - 3, 4.2, { fill: '#fff', amt: 0.2 });
+    const a = t * 5 + k + ph * 0.7;
+    D.dot(ctx, ex + Math.cos(a) * 1.8, hy - 3 + 1.4 + Math.sin(a) * 1.2, 1.8);
+  }
   D.ellipse(ctx, 12, hy + 4, 3, 2, { fill: true, amt: 0.2 });
   D.ellipse(ctx, 12, hy + 7, 3, 2, { fill: true, amt: 0.2 });
   D.arc(ctx, -2, hy + 3, 6, 6, -0.8, 0.8, 0.2);
